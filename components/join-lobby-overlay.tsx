@@ -1,13 +1,12 @@
 "use client"
 
 import type React from "react"
-
+import { useTheme } from "@/components/theme-provider" // Fixed import path to use theme-provider instead of non-existent hooks/use-theme
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { X } from "lucide-react"
-import { useTheme } from "./theme-provider"
-import { useSocket } from "@/context/SocketContext"
+import useSocket from "@/hooks/use-socket"
 import { useRouter } from "next/navigation"
 import { usePlayerName } from "@/hooks/use-player-name"
 
@@ -19,7 +18,7 @@ interface JoinLobbyOverlayProps {
 
 export function JoinLobbyOverlay({ isOpen, onClose, onJoin }: JoinLobbyOverlayProps) {
   const { theme } = useTheme()
-  const socket = useSocket()
+  const { socket } = useSocket()
   const router = useRouter()
   const { playerName } = usePlayerName()
   const [lobbyCode, setLobbyCode] = useState("")

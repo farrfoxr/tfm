@@ -49,7 +49,7 @@ export default function LobbyPage() {
   const { socket } = useSocket() // Fixed: destructure socket from the hook return value
 
   const [lobbyCode] = useState(params.code as string)
-  const [isHost, setIsHost] = useState(true) // Mock: creator is always host
+  const [isHost, setIsHost] = useState(false) // Initialize as false
   const [copied, setCopied] = useState(false)
 
   const gameTimerRef = useRef<NodeJS.Timeout | null>(null)
@@ -86,6 +86,38 @@ export default function LobbyPage() {
   const [gameTime, setGameTime] = useState<2 | 3 | 5>(2)
 
   useEffect(() => {
+    const code = params.code as string
+
+    // Validate lobby code format (should be exactly 4 letters)
+    const isValidLobbyCode = /^[A-Za-z]{4}$/.test(code)
+
+    if (!isValidLobbyCode) {
+      // Invalid lobby code format - redirect to home
+      router.replace("/")
+      return
+    }
+
+    if (!socket) return
+
+    // Request lobby data when component mounts
+    socket.emit("get-lobby", code, (response: any) => {
+      if (response.success) {
+        setLobby(response.lobby)
+        setPlayers(response.lobby.players || [])
+        // Check if current player is host
+        const currentPlayer = response.lobby.players?.find((p: any) => p.name === playerName)
+        setIsHost(currentPlayer?.isHost || false)
+      } else {
+        console.error("Failed to get lobby:", response.error)
+        // Redirect to home if lobby doesn't exist
+        router.replace("/")
+      }
+    })
+
+    console.log(`Attempting to join/create lobby: ${code}`)
+  }, [params.code, router, socket, playerName])
+
+  useEffect(() => {
     if (!socket) return
 
     const handleLobbyUpdated = (lobbyData: any) => {
@@ -102,26 +134,6 @@ export default function LobbyPage() {
       socket.off("lobby-updated", handleLobbyUpdated)
     }
   }, [socket])
-
-  useEffect(() => {
-    const code = params.code as string
-
-    // Validate lobby code format (should be exactly 4 letters)
-    const isValidLobbyCode = /^[A-Za-z]{4}$/.test(code)
-
-    if (!isValidLobbyCode) {
-      // Invalid lobby code format - redirect to home
-      router.replace("/")
-      return
-    }
-
-    // Connect to WebSocket server with lobby code
-    // Send join/create lobby request
-    // Handle server responses for lobby state
-    // Implement real-time player updates
-    // Add proper error handling for non-existent lobbies
-    console.log(`Attempting to join/create lobby: ${code}`)
-  }, [params.code, router, socket])
 
   useEffect(() => {
     if (gameState.isActive && gameState.timeRemaining > 0) {
