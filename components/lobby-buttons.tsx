@@ -6,30 +6,30 @@ import { Edit, Users } from "lucide-react"
 import { useTheme } from "./theme-provider"
 import { JoinLobbyOverlay } from "./join-lobby-overlay"
 import { useRouter } from "next/navigation"
+import { useSocket } from "@/context/SocketContext"
+import { usePlayerName } from "@/hooks/use-player-name"
 
 export function LobbyButtons() {
   const { theme } = useTheme()
   const router = useRouter()
   const [showJoinOverlay, setShowJoinOverlay] = useState(false)
+  const { socket } = useSocket()
+  const { playerName } = usePlayerName()
 
   const handleCreateLobby = () => {
-    const lobbyCode = generateLobbyCode()
-    // TODO: For real websocket implementation, change back to `/${lobbyCode}`
-    // when websocket server can handle lobby validation and routing
-    router.push(`/lobby/${lobbyCode}`)
+    if (socket && playerName) {
+      socket.emit("create-lobby", playerName, (response) => {
+        if (response.success && response.lobby) {
+          router.push(`/lobby/${response.lobby.code}`)
+        } else {
+          console.error("Failed to create lobby:", response.error)
+        }
+      })
+    }
   }
 
   const handleJoinLobby = () => {
     setShowJoinOverlay(true)
-  }
-
-  const generateLobbyCode = () => {
-    const letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-    let result = ""
-    for (let i = 0; i < 4; i++) {
-      result += letters.charAt(Math.floor(Math.random() * letters.length))
-    }
-    return result
   }
 
   const handleJoinLobbyCode = (code: string) => {

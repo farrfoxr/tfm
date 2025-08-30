@@ -1,0 +1,119 @@
+"use client"
+
+import type React from "react"
+import { createContext, useContext, useEffect, useState } from "react"
+import { io, type Socket } from "socket.io-client"
+
+interface Player {
+  id: string
+  name: string
+  isHost: boolean
+  isReady: boolean
+  score: number
+  isYou?: boolean
+}
+
+interface Question {
+  id: number
+  equation: string
+  answer: number
+  operation: string
+}
+
+interface GameSettings {
+  difficulty: "easy" | "medium" | "hard"
+  duration: number
+  questionCount: number
+}
+
+interface GameState {
+  isActive: boolean
+  currentQuestionIndex: number
+  questions: Question[]
+  timeRemaining: number
+  comboCount: number
+  isComboActive: boolean
+  comboTimeRemaining: number
+}
+
+interface Lobby {
+  code: string
+  players: Player[]
+  settings: GameSettings
+  gameState: GameState
+  host: string
+  isGameActive: boolean
+}
+
+interface ServerToClientEvents {
+  "lobby-updated": (lobby: Lobby) => void
+  "game-started": (gameState: GameState) => void
+  "question-updated": (question: Question, timeRemaining: number) => void
+  "player-answered": (playerId: string, isCorrect: boolean, newScore: number) => void
+  "game-ended": (finalScores: Player[]) => void
+  error: (message: string) => void
+}
+
+interface ClientToServerEvents {
+  "create-lobby": (
+    playerName: string,
+    callback: (response: { success: boolean; lobby?: Lobby; error?: string }) => void,
+  ) => void
+  "join-lobby": (
+    code: string,
+    playerName: string,
+    callback: (response: { success: boolean; lobby?: Lobby; error?: string }) => void,
+  ) => void
+  "leave-lobby": () => void
+  "toggle-ready": () => void
+  "start-game": () => void
+  "submit-answer": (answer: string) => void
+  "update-settings": (settings: Partial<GameSettings>) => void
+}
+
+type SocketType = Socket<ServerToClientEvents, ClientToServerEvents>
+
+interface SocketContextType {
+  socket: SocketType | null
+  isConnected: boolean
+}
+
+const SocketContext = createContext<SocketContextType>({
+  socket: null,
+  isConnected: false,
+})
+
+export function useSocket() {
+  const context = useContext(SocketContext)
+  if (!context) {
+    throw new Error("useSocket must be used within a SocketProvider")
+  }
+  return context
+}
+
+export function SocketProvider({ children }: { children: React.ReactNode }) {
+  const [socket, setSocket] = useState<SocketType | null>(null)
+  const [isConnected, setIsConnected] = useState(false)
+
+  useEffect(() => {
+    const socketInstance = io("http://localhost:3001") as SocketType
+
+    socketInstance.on("connect", () => {
+      console.log("Connected to server")
+      setIsConnected(true)
+    })
+
+    socketInstance.on("disconnect", () => {
+      console.log("Disconnected from server")
+      setIsConnected(false)
+    })
+
+    setSocket(socketInstance)
+
+    return () => {
+      socketInstance.disconnect()
+    }
+  }, [])
+
+  return <SocketContext.Provider value={{ socket, isConnected }}>{children}</SocketContext.Provider>
+}
