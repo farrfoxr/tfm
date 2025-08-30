@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button"
 import { ArrowLeft, Copy, Crown, Users, SettingsIcon, Plus, Minus, X, Divide, Check } from "lucide-react"
 import { useTheme } from "@/components/theme-provider"
 import { usePlayerName } from "@/hooks/use-player-name"
-import { useSocket } from "@/hooks/use-socket" // Added socket hook for real-time updates
+import useSocket from "@/hooks/use-socket" // Added socket hook for real-time updates
 import GameInterface from "@/components/game-interface"
 import Leaderboard from "@/components/leaderboard"
 
@@ -46,7 +46,7 @@ export default function LobbyPage() {
   const router = useRouter()
   const { theme } = useTheme()
   const { playerName } = usePlayerName()
-  const socket = useSocket() // Added socket hook for real-time updates
+  const { socket } = useSocket() // Fixed: destructure socket from the hook return value
 
   const [lobbyCode] = useState(params.code as string)
   const [isHost, setIsHost] = useState(true) // Mock: creator is always host
