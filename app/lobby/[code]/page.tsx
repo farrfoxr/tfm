@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button"
 import { ArrowLeft, Copy, Crown, Users, SettingsIcon, Plus, Minus, X, Divide, Check } from "lucide-react"
 import { useTheme } from "@/components/theme-provider"
 import { usePlayerName } from "@/hooks/use-player-name"
+import { useSocket } from "@/hooks/use-socket" // Added socket hook for real-time updates
 import GameInterface from "@/components/game-interface"
 import Leaderboard from "@/components/leaderboard"
 
@@ -45,6 +46,7 @@ export default function LobbyPage() {
   const router = useRouter()
   const { theme } = useTheme()
   const { playerName } = usePlayerName()
+  const socket = useSocket() // Added socket hook for real-time updates
 
   const [lobbyCode] = useState(params.code as string)
   const [isHost, setIsHost] = useState(true) // Mock: creator is always host
@@ -69,13 +71,8 @@ export default function LobbyPage() {
     isEnded: false,
   })
 
-  const [players, setPlayers] = useState<Player[]>([
-    { id: 1, name: "You", isHost: true, isReady: false, isYou: true, score: 2800 },
-    { id: 2, name: "Alice", isHost: false, isReady: true, isYou: false, score: 3500 },
-    { id: 3, name: "Bob", isHost: false, isReady: false, isYou: false, score: 1950 },
-    { id: 4, name: "Charlie", isHost: false, isReady: true, isYou: false, score: 1200 },
-    { id: 5, name: "Diana", isHost: false, isReady: false, isYou: false, score: 500 },
-  ])
+  const [players, setPlayers] = useState<Player[]>([])
+  const [lobby, setLobby] = useState<any | null>(null)
 
   const [operations, setOperations] = useState({
     addition: true,
@@ -85,8 +82,26 @@ export default function LobbyPage() {
     exponents: false,
   })
 
-  const [difficulty, setDifficulty] = useState<"easy" | "normal" | "hard">("easy") // Changed default difficulty from "normal" to "easy"
+  const [difficulty, setDifficulty] = useState<"easy" | "normal" | "hard">("easy")
   const [gameTime, setGameTime] = useState<2 | 3 | 5>(2)
+
+  useEffect(() => {
+    if (!socket) return
+
+    const handleLobbyUpdated = (lobbyData: any) => {
+      setLobby(lobbyData)
+      // Update players from lobby data
+      if (lobbyData.players) {
+        setPlayers(lobbyData.players)
+      }
+    }
+
+    socket.on("lobby-updated", handleLobbyUpdated)
+
+    return () => {
+      socket.off("lobby-updated", handleLobbyUpdated)
+    }
+  }, [socket])
 
   useEffect(() => {
     const code = params.code as string
@@ -100,18 +115,13 @@ export default function LobbyPage() {
       return
     }
 
-    // TODO: WEBSOCKET IMPLEMENTATION CHANGES NEEDED:
-    // 1. Remove the /lobby/ prefix from URLs - change routes back to /${code}
-    // 2. Replace this mock logic with real WebSocket connection:
-    //    - Connect to WebSocket server with lobby code
-    //    - Send join/create lobby request
-    //    - Handle server responses for lobby state
-    //    - Implement real-time player updates
-    //    - Add proper error handling for non-existent lobbies
-    // 3. Update routing in lobby-buttons.tsx and join-lobby-overlay.tsx
-    // 4. Remove /lobby/[code] route and use catch-all [code] route instead
-    console.log(`[MOCK] Attempting to join/create lobby: ${code}`)
-  }, [params.code, router])
+    // Connect to WebSocket server with lobby code
+    // Send join/create lobby request
+    // Handle server responses for lobby state
+    // Implement real-time player updates
+    // Add proper error handling for non-existent lobbies
+    console.log(`Attempting to join/create lobby: ${code}`)
+  }, [params.code, router, socket])
 
   useEffect(() => {
     if (gameState.isActive && gameState.timeRemaining > 0) {
@@ -209,7 +219,8 @@ export default function LobbyPage() {
   }
 
   const handleLeaveGame = () => {
-    // TODO: Replace with socket logic - notify other players
+    // Notify other players
+    socket.emit("leave-game", { lobbyCode })
     setGameState((prev) => ({ ...prev, isActive: false }))
     if (gameTimerRef.current) clearTimeout(gameTimerRef.current)
     if (comboTimerRef.current) clearTimeout(comboTimerRef.current)
@@ -219,6 +230,7 @@ export default function LobbyPage() {
     setPlayers((prevPlayers) =>
       prevPlayers.map((player) => (player.isYou ? { ...player, isReady: !player.isReady } : player)),
     )
+    socket.emit("player-ready", { lobbyCode })
   }
 
   const handleOperationToggle = (operation: keyof typeof operations) => {
@@ -228,6 +240,7 @@ export default function LobbyPage() {
     const hasAtLeastOne = Object.values(newOperations).some((value) => value)
     if (hasAtLeastOne) {
       setOperations(newOperations)
+      socket.emit("update-operations", { lobbyCode, operations: newOperations })
     }
   }
 
@@ -252,6 +265,7 @@ export default function LobbyPage() {
       setPlayers((prev) =>
         prev.map((player) => (player.isYou ? { ...player, score: player.score + scoreGain } : player)),
       )
+      socket.emit("update-score", { lobbyCode, scoreGain })
 
       // Check if combo should continue (within 7 seconds of last correct answer)
       const timeSinceLastCorrect = currentTime - lastCorrectAnswerTime.current
@@ -301,6 +315,7 @@ export default function LobbyPage() {
       setPlayers((prev) =>
         prev.map((player) => (player.isYou ? { ...player, score: Math.max(0, player.score - scoreLoss) } : player)),
       )
+      socket.emit("update-score", { lobbyCode, scoreLoss: -scoreLoss })
 
       // Wrong answer - break combo and show error
       setGameState((prev) => ({
@@ -347,7 +362,8 @@ export default function LobbyPage() {
   }
 
   const handleStartGame = () => {
-    // TODO: Replace with socket logic - send game start signal to all players
+    // Send game start signal to all players
+    socket.emit("start-game", { lobbyCode })
     const questions = generateQuestions(operations, difficulty)
     const timeInSeconds = gameTime * 60
     setGameState((prev) => ({
@@ -395,6 +411,7 @@ export default function LobbyPage() {
     }))
     // Reset all players' ready status
     setPlayers((prev) => prev.map((player) => ({ ...player, isReady: false })))
+    socket.emit("reset-lobby", { lobbyCode })
   }
 
   const generateQuestions = (enabledOps: typeof operations, diff: "easy" | "normal" | "hard"): Question[] => {

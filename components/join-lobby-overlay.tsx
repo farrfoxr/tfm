@@ -7,6 +7,9 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { X } from "lucide-react"
 import { useTheme } from "./theme-provider"
+import { useSocket } from "@/context/SocketContext"
+import { useRouter } from "next/navigation"
+import { usePlayerName } from "@/hooks/use-player-name"
 
 interface JoinLobbyOverlayProps {
   isOpen: boolean
@@ -16,6 +19,9 @@ interface JoinLobbyOverlayProps {
 
 export function JoinLobbyOverlay({ isOpen, onClose, onJoin }: JoinLobbyOverlayProps) {
   const { theme } = useTheme()
+  const socket = useSocket()
+  const router = useRouter()
+  const { playerName } = usePlayerName()
   const [lobbyCode, setLobbyCode] = useState("")
   const [error, setError] = useState("")
   const [isShaking, setIsShaking] = useState(false)
@@ -38,14 +44,20 @@ export function JoinLobbyOverlay({ isOpen, onClose, onJoin }: JoinLobbyOverlayPr
       return
     }
 
-    // TODO: For real websocket implementation, replace this with actual websocket
-    // lobby existence check before routing. Remove this mock validation.
-    if (lobbyCode === "TEST") {
-      showError("Lobby not found")
+    if (!socket) {
+      showError("Connection error. Please try again.")
       return
     }
 
-    onJoin(lobbyCode)
+    socket.emit("join-lobby", lobbyCode, playerName, (response: any) => {
+      if (response.success) {
+        router.push(`/lobby/${lobbyCode}`)
+        onClose()
+      } else {
+        console.error(response.error)
+        showError(response.error || "Failed to join lobby")
+      }
+    })
   }
 
   const showError = (message: string) => {
