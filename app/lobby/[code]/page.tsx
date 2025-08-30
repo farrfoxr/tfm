@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect, useRef } from "react"
-import { useParams, useRouter } from "next/navigation"
+import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { ArrowLeft, Copy, Crown, Users, SettingsIcon, Plus, Minus, X, Divide, Check } from "lucide-react"
 import { useTheme } from "@/components/theme-provider"
@@ -9,6 +9,7 @@ import { usePlayerName } from "@/hooks/use-player-name"
 import useSocket from "@/hooks/use-socket" // Added socket hook for real-time updates
 import GameInterface from "@/components/game-interface"
 import Leaderboard from "@/components/leaderboard"
+import { useLobby } from "@/context/LobbyContext"
 
 interface Player {
   id: number
@@ -41,12 +42,13 @@ interface GameState {
   isEnded: boolean
 }
 
-export default function LobbyPage() {
-  const params = useParams()
+export default function LobbyPage({ params }: { params: { code: string } }) {
   const router = useRouter()
   const { theme } = useTheme()
-  const { playerName } = usePlayerName()
-  const { socket } = useSocket() // Fixed: destructure socket from the hook return value
+  const playerName = usePlayerName()
+  const { socket } = useSocket()
+
+  const { lobby, setLobby } = useLobby()
 
   const [lobbyCode] = useState(params.code as string)
   const [isHost, setIsHost] = useState(false) // Initialize as false
@@ -71,9 +73,6 @@ export default function LobbyPage() {
     isEnded: false,
   })
 
-  const [players, setPlayers] = useState<Player[]>([])
-  const [lobby, setLobby] = useState<any | null>(null)
-
   const [operations, setOperations] = useState({
     addition: true,
     subtraction: true,
@@ -97,35 +96,19 @@ export default function LobbyPage() {
       return
     }
 
-    if (!socket) return
-
-    // Request lobby data when component mounts
-    socket.emit("get-lobby", code, (response: any) => {
-      if (response.success) {
-        setLobby(response.lobby)
-        setPlayers(response.lobby.players || [])
-        // Check if current player is host
-        const currentPlayer = response.lobby.players?.find((p: any) => p.name === playerName)
-        setIsHost(currentPlayer?.isHost || false)
-      } else {
-        console.error("Failed to get lobby:", response.error)
-        // Redirect to home if lobby doesn't exist
-        router.replace("/")
-      }
-    })
-
-    console.log(`Attempting to join/create lobby: ${code}`)
-  }, [params.code, router, socket, playerName])
+    // The lobby data is already available from context when user creates/joins
+    if (lobby) {
+      // Check if current player is host
+      const currentPlayer = lobby.players?.find((p: any) => p.name === playerName)
+      setIsHost(currentPlayer?.isHost || false)
+    }
+  }, [params.code, router, lobby, playerName])
 
   useEffect(() => {
     if (!socket) return
 
     const handleLobbyUpdated = (lobbyData: any) => {
       setLobby(lobbyData)
-      // Update players from lobby data
-      if (lobbyData.players) {
-        setPlayers(lobbyData.players)
-      }
     }
 
     socket.on("lobby-updated", handleLobbyUpdated)
@@ -133,7 +116,17 @@ export default function LobbyPage() {
     return () => {
       socket.off("lobby-updated", handleLobbyUpdated)
     }
-  }, [socket])
+  }, [socket, setLobby])
+
+  useEffect(() => {
+    if (playerName && lobby?.players) {
+      const updatedLobby = {
+        ...lobby,
+        players: lobby.players.map((player: any) => (player.isYou ? { ...player, name: playerName } : player)),
+      }
+      setLobby(updatedLobby)
+    }
+  }, [playerName, lobby, setLobby])
 
   useEffect(() => {
     if (gameState.isActive && gameState.timeRemaining > 0) {
@@ -208,14 +201,6 @@ export default function LobbyPage() {
     }
   }, [])
 
-  useEffect(() => {
-    if (playerName) {
-      setPlayers((prevPlayers) =>
-        prevPlayers.map((player) => (player.isYou ? { ...player, name: playerName } : player)),
-      )
-    }
-  }, [playerName])
-
   const handleCopyCode = async () => {
     try {
       await navigator.clipboard.writeText(lobbyCode)
@@ -239,9 +224,11 @@ export default function LobbyPage() {
   }
 
   const handleReady = () => {
-    setPlayers((prevPlayers) =>
-      prevPlayers.map((player) => (player.isYou ? { ...player, isReady: !player.isReady } : player)),
-    )
+    const updatedLobby = {
+      ...lobby,
+      players: lobby.players.map((player: any) => (player.isYou ? { ...player, isReady: !player.isReady } : player)),
+    }
+    setLobby(updatedLobby)
     socket.emit("player-ready", { lobbyCode })
   }
 
@@ -274,9 +261,13 @@ export default function LobbyPage() {
       const scoreGain = Math.round(100 * currentMultiplier)
 
       // Update player score
-      setPlayers((prev) =>
-        prev.map((player) => (player.isYou ? { ...player, score: player.score + scoreGain } : player)),
-      )
+      const updatedLobby = {
+        ...lobby,
+        players: lobby.players.map((player: any) =>
+          player.isYou ? { ...player, score: player.score + scoreGain } : player,
+        ),
+      }
+      setLobby(updatedLobby)
       socket.emit("update-score", { lobbyCode, scoreGain })
 
       // Check if combo should continue (within 7 seconds of last correct answer)
@@ -324,9 +315,13 @@ export default function LobbyPage() {
       const scoreLoss = Math.round(25 * penaltyMultiplier)
 
       // Update player score (subtract penalty)
-      setPlayers((prev) =>
-        prev.map((player) => (player.isYou ? { ...player, score: Math.max(0, player.score - scoreLoss) } : player)),
-      )
+      const updatedLobby = {
+        ...lobby,
+        players: lobby.players.map((player: any) =>
+          player.isYou ? { ...player, score: Math.max(0, player.score - scoreLoss) } : player,
+        ),
+      }
+      setLobby(updatedLobby)
       socket.emit("update-score", { lobbyCode, scoreLoss: -scoreLoss })
 
       // Wrong answer - break combo and show error
@@ -422,7 +417,11 @@ export default function LobbyPage() {
       hasError: false,
     }))
     // Reset all players' ready status
-    setPlayers((prev) => prev.map((player) => ({ ...player, isReady: false })))
+    const updatedLobby = {
+      ...lobby,
+      players: lobby.players.map((player: any) => ({ ...player, isReady: false })),
+    }
+    setLobby(updatedLobby)
     socket.emit("reset-lobby", { lobbyCode })
   }
 
@@ -644,12 +643,12 @@ export default function LobbyPage() {
     return questions
   }
 
-  const currentPlayer = players.find((p) => p.isYou)
-  const allPlayersReady = players.every((player) => player.isReady)
-  const canStartGame = isHost && currentPlayer?.isReady && (allPlayersReady || true) && players.length >= 1 // Debug: Allow start even if not all players ready
+  const currentPlayer = lobby?.players?.find((p: any) => p.isYou)
+  const allPlayersReady = lobby?.players?.every((player: any) => player.isReady)
+  const canStartGame = isHost && currentPlayer?.isReady && (allPlayersReady || true) && lobby?.players?.length >= 1 // Debug: Allow start even if not all players ready
 
   if (gameState.isEnded) {
-    return <Leaderboard players={players} onReturnToLobby={handleReturnToLobby} />
+    return <Leaderboard players={lobby?.players || []} onReturnToLobby={handleReturnToLobby} />
   }
 
   if (gameState.isActive) {
@@ -660,7 +659,7 @@ export default function LobbyPage() {
 
     return (
       <GameInterface
-        players={players}
+        players={lobby?.players || []}
         currentQuestion={currentQuestion}
         timeRemaining={gameState.timeRemaining}
         comboCount={gameState.comboCount}
@@ -669,7 +668,7 @@ export default function LobbyPage() {
         showMultiplier={gameState.showMultiplier}
         multiplierText={gameState.multiplierText}
         hasError={gameState.hasError}
-        myRank={[...players].sort((a, b) => b.score - a.score).findIndex((p) => p.isYou) + 1}
+        myRank={[...(lobby?.players || [])].sort((a, b) => b.score - a.score).findIndex((p) => p.isYou) + 1}
         onAnswerSubmit={handleAnswerSubmit}
         onLeaveGame={handleLeaveGame}
         onGameEnd={handleGameEnd}
@@ -1009,13 +1008,13 @@ export default function LobbyPage() {
                 theme === "nord" ? "text-[var(--quiz-text)]" : "text-[var(--quiz-sakura-text)]"
               }`}
             >
-              Players ({players.length}/20)
+              Players ({lobby?.players?.length ?? 0}/20)
             </h2>
           </div>
 
           {/* Player List */}
           <div className="space-y-3">
-            {players.map((player) => (
+            {lobby?.players?.map((player: any) => (
               <div
                 key={player.id}
                 className={`flex items-center justify-between p-4 rounded-xl ${
@@ -1110,8 +1109,8 @@ export default function LobbyPage() {
                   }`}
                 >
                   {allPlayersReady
-                    ? `Start Game (${players.length} players)`
-                    : `Start Game - DEBUG MODE (${players.filter((p) => p.isReady).length}/${players.length} ready)`}
+                    ? `Start Game (${lobby?.players?.length ?? 0} players)`
+                    : `Start Game - DEBUG MODE (${lobby?.players?.filter((p: any) => p.isReady).length ?? 0}/${lobby?.players?.length ?? 0} ready)`}
                 </Button>
               )}
             </div>
@@ -1150,7 +1149,7 @@ export default function LobbyPage() {
                 theme === "nord" ? "text-[var(--quiz-secondary)]" : "text-[var(--quiz-sakura-secondary)]"
               }`}
             >
-              Players: {players.length} | Socket: Available | Player ID: {isHost ? "host" : "player"}
+              Players: {lobby?.players?.length} | Socket: Available | Player ID: {isHost ? "host" : "player"}
             </p>
           </div>
         </div>
