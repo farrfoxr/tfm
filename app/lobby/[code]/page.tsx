@@ -70,9 +70,11 @@ export default function LobbyPage() {
   })
 
   const [players, setPlayers] = useState<Player[]>([
-    { id: 1, name: "", isHost: true, isReady: false, isYou: true, score: 0 }, // Added score field
-    { id: 2, name: "Alice", isHost: false, isReady: true, isYou: false, score: 1832 }, // Mock scores
-    { id: 3, name: "Bob", isHost: false, isReady: false, isYou: false, score: 1456 }, // Mock scores
+    { id: 1, name: "You", isHost: true, isReady: false, isYou: true, score: 2800 },
+    { id: 2, name: "Alice", isHost: false, isReady: true, isYou: false, score: 3500 },
+    { id: 3, name: "Bob", isHost: false, isReady: false, isYou: false, score: 1950 },
+    { id: 4, name: "Charlie", isHost: false, isReady: true, isYou: false, score: 1200 },
+    { id: 5, name: "Diana", isHost: false, isReady: false, isYou: false, score: 500 },
   ])
 
   const [operations, setOperations] = useState({
@@ -83,7 +85,7 @@ export default function LobbyPage() {
     exponents: false,
   })
 
-  const [difficulty, setDifficulty] = useState<"normal" | "hard">("normal")
+  const [difficulty, setDifficulty] = useState<"easy" | "normal" | "hard">("normal")
   const [gameTime, setGameTime] = useState<2 | 3 | 5>(2)
 
   useEffect(() => {
@@ -395,20 +397,19 @@ export default function LobbyPage() {
     setPlayers((prev) => prev.map((player) => ({ ...player, isReady: false })))
   }
 
-  const generateQuestions = (enabledOps: typeof operations, diff: "normal" | "hard"): Question[] => {
+  const generateQuestions = (enabledOps: typeof operations, diff: "easy" | "normal" | "hard"): Question[] => {
     const questions: Question[] = []
     const ops = Object.entries(enabledOps)
       .filter(([_, enabled]) => enabled)
       .map(([op, _]) => op)
 
-    // Helper function to generate weighted random numbers (favor 2-3 digits over 1 digit)
     const generateWeightedNumber = (min: number, max: number, favorLarger = true): number => {
       if (!favorLarger || max <= 9) {
         return Math.floor(Math.random() * (max - min + 1)) + min
       }
 
-      // Weight system: 20% chance for 1-digit, 80% chance for 2-3 digit
-      const useSmall = Math.random() < 0.2
+      // Weight system: 15% chance for 1-digit, 85% chance for multi-digit
+      const useSmall = Math.random() < 0.15
       if (useSmall && min <= 9) {
         return Math.floor(Math.random() * Math.min(9, max) + 1) + (min <= 1 ? 0 : min - 1)
       } else {
@@ -418,14 +419,32 @@ export default function LobbyPage() {
     }
 
     const generateAddition = (): { equation: string; answer: number } => {
-      const a = generateWeightedNumber(1, 999)
-      const b = generateWeightedNumber(1, 999)
+      let maxRange: number
+      if (diff === "easy") {
+        maxRange = 99 // 1-2 digits
+      } else if (diff === "normal") {
+        maxRange = 999 // up to 3 digits
+      } else {
+        maxRange = 99999 // up to 5 digits
+      }
+
+      const a = generateWeightedNumber(1, maxRange)
+      const b = generateWeightedNumber(1, maxRange)
       return { equation: `${a} + ${b}`, answer: a + b }
     }
 
     const generateSubtraction = (): { equation: string; answer: number } => {
-      let a = generateWeightedNumber(10, 999) // Start with 2-3 digits
-      let b = generateWeightedNumber(10, 999)
+      let maxRange: number
+      if (diff === "easy") {
+        maxRange = 99 // 1-2 digits
+      } else if (diff === "normal") {
+        maxRange = 999 // up to 3 digits
+      } else {
+        maxRange = 99999 // up to 5 digits
+      }
+
+      let a = generateWeightedNumber(10, maxRange)
+      let b = generateWeightedNumber(10, maxRange)
 
       // Ensure a > b to avoid negative results
       if (b > a) {
@@ -438,37 +457,131 @@ export default function LobbyPage() {
     const generateMultiplication = (): { equation: string; answer: number } => {
       let a: number, b: number
 
-      if (diff === "normal") {
-        // Normal mode: 1x1 or 2x1 digits only
-        const useSmallMultiplication = Math.random() < 0.5
-        if (useSmallMultiplication) {
+      if (diff === "easy") {
+        // Easy: one 1-digit (1-9), other 1-2 digits (1-99)
+        const useFirstAsSmall = Math.random() < 0.5
+        if (useFirstAsSmall) {
           a = Math.floor(Math.random() * 9) + 1 // 1 digit
-          b = Math.floor(Math.random() * 9) + 1 // 1 digit
+          b = generateWeightedNumber(1, 99, false) // 1-2 digits
         } else {
-          a = Math.floor(Math.random() * 90) + 10 // 2 digits
+          a = generateWeightedNumber(1, 99, false) // 1-2 digits
           b = Math.floor(Math.random() * 9) + 1 // 1 digit
         }
-      } else {
-        // Hard mode: 1-2 digits × 1-2 digits
-        a = generateWeightedNumber(1, 99, false) // Don't heavily favor larger for multiplication
+      } else if (diff === "normal") {
+        // Normal: both up to 2 digits (1-99)
+        a = generateWeightedNumber(1, 99, false)
         b = generateWeightedNumber(1, 99, false)
+      } else {
+        // Hard: both up to 3 digits (1-999)
+        a = generateWeightedNumber(1, 999, false)
+        b = generateWeightedNumber(1, 999, false)
       }
 
       return { equation: `${a} × ${b}`, answer: a * b }
     }
 
     const generateDivision = (): { equation: string; answer: number } => {
-      // Generate by creating a × b = c, then ask c ÷ a = b
-      const a = generateWeightedNumber(2, diff === "normal" ? 20 : 50) // Divisor
-      const b = generateWeightedNumber(1, diff === "normal" ? 50 : 100) // Quotient (answer)
-      const c = a * b // Dividend
+      let a: number, b: number
 
+      if (diff === "easy") {
+        // Easy: either divisor or quotient is 1-digit, other is 1-2 digits
+        const useDivisorAsSmall = Math.random() < 0.5
+        if (useDivisorAsSmall) {
+          a = Math.floor(Math.random() * 9) + 2 // 1 digit divisor (2-9)
+          b = generateWeightedNumber(1, 99, false) // 1-2 digit quotient
+        } else {
+          a = generateWeightedNumber(2, 99, false) // 1-2 digit divisor
+          b = Math.floor(Math.random() * 9) + 1 // 1 digit quotient
+        }
+      } else if (diff === "normal") {
+        // Normal: both up to 2 digits
+        a = generateWeightedNumber(2, 99, false) // Divisor
+        b = generateWeightedNumber(1, 99, false) // Quotient
+      } else {
+        // Hard: both up to 3 digits
+        a = generateWeightedNumber(2, 999, false) // Divisor
+        b = generateWeightedNumber(1, 999, false) // Quotient
+      }
+
+      const c = a * b // Dividend
       return { equation: `${c} ÷ ${a}`, answer: b }
+    }
+
+    const generateExponents = (): { equation: string; answer: number } => {
+      let baseRange: number
+      if (diff === "easy") {
+        baseRange = 20 // base 1-20
+      } else if (diff === "normal") {
+        baseRange = 30 // base 1-30
+      } else {
+        baseRange = 50 // base 1-50
+      }
+
+      const base = Math.floor(Math.random() * baseRange) + 1
+      const operationType = Math.floor(Math.random() * 3) // 0: x², 1: x³, 2: √(x²)
+
+      switch (operationType) {
+        case 0: // x²
+          return { equation: `${base}²`, answer: base * base }
+        case 1: // x³
+          return { equation: `${base}³`, answer: base * base * base }
+        case 2: // √(x²)
+          const squared = base * base
+          return { equation: `√${squared}`, answer: base }
+        default:
+          return { equation: `${base}²`, answer: base * base }
+      }
+    }
+
+    const getWeightedOperation = (): string => {
+      const weights: { [key: string]: number } = {}
+
+      if (diff === "easy") {
+        // Easy: Add/Sub 30% each, Mult/Div 15% each, Exp 10%
+        if (ops.includes("addition")) weights.addition = 30
+        if (ops.includes("subtraction")) weights.subtraction = 30
+        if (ops.includes("multiplication")) weights.multiplication = 15
+        if (ops.includes("division")) weights.division = 15
+        if (ops.includes("exponents")) weights.exponents = 10
+      } else if (diff === "normal") {
+        // Normal: Add/Sub 25% each, Mult/Div 20% each, Exp 10%
+        if (ops.includes("addition")) weights.addition = 25
+        if (ops.includes("subtraction")) weights.subtraction = 25
+        if (ops.includes("multiplication")) weights.multiplication = 20
+        if (ops.includes("division")) weights.division = 20
+        if (ops.includes("exponents")) weights.exponents = 10
+      } else {
+        // Hard: Add/Sub 20% each, Mult/Div 25% each, Exp 10%
+        if (ops.includes("addition")) weights.addition = 20
+        if (ops.includes("subtraction")) weights.subtraction = 20
+        if (ops.includes("multiplication")) weights.multiplication = 25
+        if (ops.includes("division")) weights.division = 25
+        if (ops.includes("exponents")) weights.exponents = 10
+      }
+
+      // Normalize weights to sum to 100
+      const totalWeight = Object.values(weights).reduce((sum, weight) => sum + weight, 0)
+      const normalizedWeights: { [key: string]: number } = {}
+      Object.entries(weights).forEach(([op, weight]) => {
+        normalizedWeights[op] = (weight / totalWeight) * 100
+      })
+
+      // Select operation based on weights
+      const random = Math.random() * 100
+      let cumulative = 0
+      for (const [operation, weight] of Object.entries(normalizedWeights)) {
+        cumulative += weight
+        if (random <= cumulative) {
+          return operation
+        }
+      }
+
+      return ops[0] // Fallback
     }
 
     // Generate 40 questions
     for (let i = 0; i < 40; i++) {
-      const operation = ops[Math.floor(Math.random() * ops.length)]
+      const operation = getWeightedOperation()
       let questionData: { equation: string; answer: number }
 
       switch (operation) {
@@ -485,10 +598,7 @@ export default function LobbyPage() {
           questionData = generateDivision()
           break
         case "exponents":
-          // Keep existing exponent logic
-          const base = diff === "normal" ? Math.floor(Math.random() * 10) + 2 : Math.floor(Math.random() * 15) + 2
-          const exp = diff === "normal" ? 2 : Math.floor(Math.random() * 3) + 2
-          questionData = { equation: `${base}^${exp}`, answer: Math.pow(base, exp) }
+          questionData = generateExponents()
           break
         default:
           questionData = generateAddition() // Fallback
@@ -530,6 +640,7 @@ export default function LobbyPage() {
         showMultiplier={gameState.showMultiplier}
         multiplierText={gameState.multiplierText}
         hasError={gameState.hasError}
+        myRank={[...players].sort((a, b) => b.score - a.score).findIndex((p) => p.isYou) + 1}
         onAnswerSubmit={handleAnswerSubmit}
         onLeaveGame={handleLeaveGame}
         onGameEnd={handleGameEnd}
@@ -589,8 +700,8 @@ export default function LobbyPage() {
                   onClick={handleCopyCode}
                   className={`h-8 w-8 p-0 ${
                     theme === "nord"
-                      ? "text-[var(--quiz-secondary)] hover:text-[var(--quiz-accent-yellow)]"
-                      : "text-[var(--quiz-sakura-secondary)] hover:text-[var(--quiz-sakura-accent)]"
+                      ? "text-[var(--quiz-secondary)] hover:text-[var(--quiz-text)] hover:bg-[var(--quiz-muted)]"
+                      : "text-[var(--quiz-sakura-secondary)] hover:text-[var(--quiz-sakura-text)] hover:bg-[var(--quiz-sakura-muted)]"
                   }`}
                 >
                   <Copy className="h-4 w-4" />
@@ -700,6 +811,21 @@ export default function LobbyPage() {
                 Difficulty:
               </span>
               <div className="flex gap-2">
+                <Button
+                  onClick={() => setDifficulty("easy")}
+                  size="sm"
+                  className={`px-6 py-2 font-medium transition-all duration-300 ${
+                    difficulty === "easy"
+                      ? theme === "nord"
+                        ? "bg-[var(--quiz-accent-yellow)] text-[var(--quiz-background)] hover:bg-[var(--quiz-accent-yellow)]/90"
+                        : "bg-[var(--quiz-sakura-accent)] text-white hover:bg-[var(--quiz-sakura-accent)]/90"
+                      : theme === "nord"
+                        ? "bg-[var(--quiz-background)] text-[var(--quiz-secondary)] border border-[var(--quiz-primary)] hover:bg-[var(--quiz-primary)]/20"
+                        : "bg-[var(--quiz-sakura-background)] text-[var(--quiz-sakura-secondary)] border border-[var(--quiz-sakura-secondary)] hover:bg-[var(--quiz-sakura-secondary)]/20"
+                  }`}
+                >
+                  Easy
+                </Button>
                 <Button
                   onClick={() => setDifficulty("normal")}
                   size="sm"
@@ -854,7 +980,7 @@ export default function LobbyPage() {
                 theme === "nord" ? "text-[var(--quiz-text)]" : "text-[var(--quiz-sakura-text)]"
               }`}
             >
-              Players ({players.length}/10)
+              Players ({players.length}/20)
             </h2>
           </div>
 

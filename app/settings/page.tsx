@@ -1,5 +1,7 @@
 "use client"
 
+import type React from "react"
+
 import { useState } from "react"
 import Link from "next/link"
 import { ArrowLeft, Palette, User } from "lucide-react"
@@ -13,15 +15,28 @@ export default function SettingsPage() {
   const { theme, setTheme } = useTheme()
   const { playerName, updatePlayerName } = usePlayerName()
   const [tempName, setTempName] = useState(playerName)
+  const [showSuccessMessage, setShowSuccessMessage] = useState(false)
 
   const handleSaveName = () => {
     if (tempName.trim()) {
       updatePlayerName(tempName.trim())
+      setTempName("")
+      setShowSuccessMessage(true)
+      setTimeout(() => {
+        setShowSuccessMessage(false)
+      }, 3000)
     }
   }
 
   const handleThemeChange = (newTheme: "nord" | "sakura") => {
     setTheme(newTheme)
+  }
+
+  const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value
+    if (value.length <= 20) {
+      setTempName(value)
+    }
   }
 
   return (
@@ -93,7 +108,8 @@ export default function SettingsPage() {
               <Input
                 id="playerName"
                 value={tempName}
-                onChange={(e) => setTempName(e.target.value)}
+                onChange={handleNameChange}
+                maxLength={20}
                 className={`mt-1 ${
                   theme === "nord"
                     ? "bg-[var(--quiz-bg)] border-[var(--quiz-primary)] text-[var(--quiz-text)] focus:border-[var(--quiz-accent-yellow)]"
@@ -112,6 +128,15 @@ export default function SettingsPage() {
             >
               Save Name
             </Button>
+            {showSuccessMessage && (
+              <div
+                className={`transition-opacity duration-300 ease-in-out text-sm font-medium ${
+                  theme === "nord" ? "text-[var(--quiz-accent-yellow)]" : "text-[var(--quiz-sakura-accent)]"
+                }`}
+              >
+                Name changed successfully!
+              </div>
+            )}
           </div>
         </div>
 

@@ -32,6 +32,7 @@ interface GameInterfaceProps {
   showMultiplier: boolean
   multiplierText: string
   hasError: boolean
+  myRank?: number
   onAnswerSubmit: (answer: string) => void
   onLeaveGame: () => void
   onGameEnd?: () => void
@@ -48,6 +49,7 @@ export default function GameInterface({
   showMultiplier,
   multiplierText,
   hasError,
+  myRank,
   onAnswerSubmit,
   onLeaveGame,
   onGameEnd,
@@ -120,6 +122,8 @@ export default function GameInterface({
   const timerAnimationDuration = isTimerLow ? "duration-150" : "duration-500"
 
   const sortedPlayers = [...players].sort((a, b) => b.score - a.score)
+  const topThreePlayers = sortedPlayers.slice(0, 3)
+  const currentPlayer = players.find((p) => p.isYou)
 
   return (
     <div className={`min-h-screen ${theme === "nord" ? "theme-nord" : "theme-sakura"}`}>
@@ -157,7 +161,7 @@ export default function GameInterface({
         </div>
       )}
 
-      <div className="container mx-auto px-4 py-6 max-w-6xl">
+      <div className="container mx-auto px-4 py-6 max-w-full">
         <div className="flex items-start justify-between mb-8">
           <Button
             variant="ghost"
@@ -174,11 +178,10 @@ export default function GameInterface({
           </Button>
 
           <div
-            className={`rounded-2xl p-4 min-w-[280px] ${
-              theme === "nord"
-                ? "bg-[var(--quiz-muted)] border border-[var(--quiz-primary)]"
-                : "bg-[var(--quiz-sakura-muted)] border border-[var(--quiz-sakura-secondary)]"
-            }`}
+            className={`rounded-2xl p-4 min-w-[280px] shadow-sm`} // reduced shadow from shadow-lg to shadow-sm
+            style={{
+              backgroundColor: theme === "nord" ? "rgba(47, 53, 65, 0.4)" : "rgba(229, 221, 214, 0.4)",
+            }}
           >
             <div className="flex justify-between items-center mb-3">
               <span
@@ -197,18 +200,18 @@ export default function GameInterface({
               </span>
             </div>
             <div className="space-y-2">
-              {sortedPlayers.map((player, index) => (
+              {topThreePlayers.map((player, index) => (
                 <div key={player.id} className="flex justify-between items-center">
                   <div className="flex items-center gap-2">
                     <span
-                      className={`text-sm font-medium ${
+                      className={`text-xs font-medium ${
                         theme === "nord" ? "text-[var(--quiz-secondary)]" : "text-[var(--quiz-sakura-secondary)]"
                       }`}
                     >
                       {index + 1}.
                     </span>
                     <span
-                      className={`font-semibold ${
+                      className={`text-sm font-semibold ${
                         player.isYou
                           ? theme === "nord"
                             ? "text-[var(--quiz-accent-yellow)]"
@@ -222,7 +225,7 @@ export default function GameInterface({
                     </span>
                   </div>
                   <span
-                    className={`font-bold ${
+                    className={`text-sm font-bold ${
                       theme === "nord" ? "text-[var(--quiz-text)]" : "text-[var(--quiz-sakura-text)]"
                     }`}
                   >
@@ -230,6 +233,40 @@ export default function GameInterface({
                   </span>
                 </div>
               ))}
+
+              {myRank && myRank > 3 && currentPlayer && (
+                <div
+                  className={`flex justify-between items-center mt-3 pt-2 border-t ${
+                    theme === "nord"
+                      ? "border-[var(--quiz-primary)] bg-[var(--quiz-background)]/50"
+                      : "border-[var(--quiz-sakura-secondary)] bg-[var(--quiz-sakura-background)]/50"
+                  } rounded px-2 py-1`}
+                >
+                  <div className="flex items-center gap-2">
+                    <span
+                      className={`text-xs font-medium ${
+                        theme === "nord" ? "text-[var(--quiz-secondary)]" : "text-[var(--quiz-sakura-secondary)]"
+                      }`}
+                    >
+                      {myRank}.
+                    </span>
+                    <span
+                      className={`text-sm font-semibold ${
+                        theme === "nord" ? "text-[var(--quiz-accent-yellow)]" : "text-[var(--quiz-sakura-accent)]"
+                      }`}
+                    >
+                      {currentPlayer.name}
+                    </span>
+                  </div>
+                  <span
+                    className={`text-sm font-bold ${
+                      theme === "nord" ? "text-[var(--quiz-text)]" : "text-[var(--quiz-sakura-text)]"
+                    }`}
+                  >
+                    {currentPlayer.score.toLocaleString()}
+                  </span>
+                </div>
+              )}
             </div>
           </div>
         </div>

@@ -19,8 +19,13 @@ interface LeaderboardProps {
 export default function Leaderboard({ players, onReturnToLobby }: LeaderboardProps) {
   const { theme } = useTheme()
 
-  // Sort players by score (highest first) and take top 10
-  const sortedPlayers = [...players].sort((a, b) => b.score - a.score).slice(0, 10)
+  const sortedPlayers = [...players].sort((a, b) => b.score - a.score).slice(0, 3)
+
+  const allSortedPlayers = [...players].sort((a, b) => b.score - a.score)
+  const currentPlayer = players.find((player) => player.isYou)
+  const currentPlayerRank = currentPlayer
+    ? allSortedPlayers.findIndex((player) => player.id === currentPlayer.id) + 1
+    : null
 
   const getRankIcon = (rank: number) => {
     switch (rank) {
@@ -87,7 +92,7 @@ export default function Leaderboard({ players, onReturnToLobby }: LeaderboardPro
                   theme === "nord" ? "text-[var(--quiz-text)]" : "text-[var(--quiz-sakura-text)]"
                 }`}
               >
-                Top {Math.min(sortedPlayers.length, 10)} Players
+                Top 3 Players
               </h2>
             </div>
 
@@ -169,6 +174,20 @@ export default function Leaderboard({ players, onReturnToLobby }: LeaderboardPro
                 )
               })}
             </div>
+
+            {currentPlayerRank && currentPlayerRank > 3 && (
+              <div className="mt-6 pt-4 border-t border-opacity-20 border-current">
+                <div className="text-center">
+                  <span
+                    className={`text-xl font-semibold ${
+                      theme === "nord" ? "text-[var(--quiz-text)]" : "text-[var(--quiz-sakura-text)]"
+                    }`}
+                  >
+                    Your ranking: #{currentPlayerRank}
+                  </span>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Return to Lobby Button */}
