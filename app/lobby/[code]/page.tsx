@@ -85,7 +85,7 @@ export default function LobbyPage() {
     exponents: false,
   })
 
-  const [difficulty, setDifficulty] = useState<"easy" | "normal" | "hard">("normal")
+  const [difficulty, setDifficulty] = useState<"easy" | "normal" | "hard">("easy") // Changed default difficulty from "normal" to "easy"
   const [gameTime, setGameTime] = useState<2 | 3 | 5>(2)
 
   useEffect(() => {

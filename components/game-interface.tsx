@@ -104,7 +104,7 @@ export default function GameInterface({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    if (answer.trim() && !showCountdown && !showGameOver) {
+    if (answer.trim() && !showGameOver) {
       const isCorrect = Number.parseInt(answer.trim()) === currentQuestion.answer
       onAnswerSubmit(answer.trim())
       setAnswer("")
@@ -128,18 +128,20 @@ export default function GameInterface({
   return (
     <div className={`min-h-screen ${theme === "nord" ? "theme-nord" : "theme-sakura"}`}>
       {showCountdown && (
-        <div className="fixed inset-0 z-40 flex items-center justify-end pr-20 pointer-events-none">
-          <div
-            key={countdownNumber}
-            className={`text-9xl font-black animate-stamp ${
-              theme === "nord" ? "text-[var(--quiz-accent-yellow)]" : "text-[var(--quiz-sakura-accent)]"
-            }`}
-            style={{
-              textShadow: "4px 4px 8px rgba(0,0,0,0.3), 0 0 20px rgba(255,255,255,0.2)",
-              filter: "drop-shadow(0 0 10px rgba(0,0,0,0.5))",
-            }}
-          >
-            {countdownNumber}
+        <div className="fixed inset-0 z-40 flex items-center justify-center pointer-events-none">
+          <div className="relative w-full max-w-2xl">
+            <div
+              key={countdownNumber}
+              className={`absolute -right-32 top-1/2 transform -translate-y-1/2 text-9xl font-black animate-stamp ${
+                theme === "nord" ? "text-[var(--quiz-accent-yellow)]" : "text-[var(--quiz-sakura-accent)]"
+              }`}
+              style={{
+                textShadow: "4px 4px 8px rgba(0,0,0,0.3), 0 0 20px rgba(255,255,255,0.2)",
+                filter: "drop-shadow(0 0 10px rgba(0,0,0,0.5))",
+              }}
+            >
+              {countdownNumber}
+            </div>
           </div>
         </div>
       )}
@@ -161,7 +163,7 @@ export default function GameInterface({
         </div>
       )}
 
-      <div className="container mx-auto px-4 py-6 max-w-screen-2xl">
+      <div className="container mx-auto px-4 py-6 max-w-screen-2xl relative">
         <div className="flex items-start justify-between mb-8">
           <Button
             variant="ghost"
@@ -317,9 +319,9 @@ export default function GameInterface({
               <Button
                 type="submit"
                 size="lg"
-                disabled={!answer.trim() || showCountdown || showGameOver}
+                disabled={!answer.trim() || showGameOver}
                 className={`h-12 px-8 text-lg font-semibold transition-all duration-300 ${
-                  answer.trim() && !showCountdown && !showGameOver
+                  answer.trim() && !showGameOver
                     ? theme === "nord"
                       ? "bg-[var(--quiz-accent-blue)] hover:bg-[var(--quiz-accent-blue)]/90 text-[var(--quiz-background)]"
                       : "bg-[var(--quiz-sakura-accent)] hover:bg-[var(--quiz-sakura-accent)]/90 text-white"
