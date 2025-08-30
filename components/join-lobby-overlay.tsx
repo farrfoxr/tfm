@@ -9,6 +9,7 @@ import { X } from "lucide-react"
 import useSocket from "@/hooks/use-socket"
 import { useRouter } from "next/navigation"
 import { usePlayerName } from "@/hooks/use-player-name"
+import { useLobby } from "@/context/LobbyContext"
 
 interface JoinLobbyOverlayProps {
   isOpen: boolean
@@ -21,6 +22,7 @@ export function JoinLobbyOverlay({ isOpen, onClose, onJoin }: JoinLobbyOverlayPr
   const { socket } = useSocket()
   const router = useRouter()
   const { playerName } = usePlayerName()
+  const { setLobby } = useLobby()
   const [lobbyCode, setLobbyCode] = useState("")
   const [error, setError] = useState("")
   const [isShaking, setIsShaking] = useState(false)
@@ -50,6 +52,7 @@ export function JoinLobbyOverlay({ isOpen, onClose, onJoin }: JoinLobbyOverlayPr
 
     socket.emit("join-lobby", lobbyCode, playerName, (response: any) => {
       if (response.success) {
+        setLobby(response.lobby)
         router.push(`/lobby/${lobbyCode}`)
         onClose()
       } else {

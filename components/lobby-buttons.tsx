@@ -8,6 +8,7 @@ import { JoinLobbyOverlay } from "./join-lobby-overlay"
 import { useRouter } from "next/navigation"
 import { useSocket } from "@/context/SocketContext"
 import { usePlayerName } from "@/hooks/use-player-name"
+import { useLobby } from "@/context/LobbyContext"
 
 export function LobbyButtons() {
   const { theme } = useTheme()
@@ -15,11 +16,13 @@ export function LobbyButtons() {
   const [showJoinOverlay, setShowJoinOverlay] = useState(false)
   const { socket } = useSocket()
   const { playerName } = usePlayerName()
+  const { setLobby } = useLobby()
 
   const handleCreateLobby = () => {
     if (socket && playerName) {
       socket.emit("create-lobby", playerName, (response) => {
         if (response.success && response.lobby) {
+          setLobby(response.lobby)
           router.push(`/lobby/${response.lobby.code}`)
         } else {
           console.error("Failed to create lobby:", response.error)

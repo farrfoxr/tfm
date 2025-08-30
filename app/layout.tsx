@@ -4,6 +4,7 @@ import { Poppins } from "next/font/google"
 import "./globals.css"
 import { ThemeProvider } from "@/components/theme-provider"
 import { SocketProvider } from "@/context/SocketContext"
+import { LobbyProvider } from "@/context/LobbyContext"
 
 const poppins = Poppins({
   subsets: ["latin"],
@@ -27,7 +28,9 @@ export default function RootLayout({
     <html lang="en">
       <body className={`font-sans ${poppins.variable} antialiased`}>
         <ThemeProvider>
-          <SocketProvider>{children}</SocketProvider>
+          <SocketProvider>
+            <LobbyProvider>{children}</LobbyProvider>
+          </SocketProvider>
         </ThemeProvider>
       </body>
     </html>
