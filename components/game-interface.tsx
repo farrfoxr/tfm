@@ -161,7 +161,7 @@ export default function GameInterface({
         </div>
       )}
 
-      <div className="container mx-auto px-4 py-6 max-w-full">
+      <div className="container mx-auto px-4 py-6 max-w-screen-2xl">
         <div className="flex items-start justify-between mb-8">
           <Button
             variant="ghost"
@@ -270,7 +270,6 @@ export default function GameInterface({
             </div>
           </div>
         </div>
-
         <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-8">
           <div
             className={`relative rounded-3xl p-12 max-w-2xl w-full text-center transition-all duration-300 ${
