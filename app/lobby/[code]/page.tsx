@@ -8,6 +8,7 @@ import { useTheme } from "@/components/theme-provider"
 import { usePlayerName } from "@/hooks/use-player-name"
 import { useSocket } from "@/context/SocketContext"
 import { useLobby } from "@/context/LobbyContext"
+import type { GameSettings } from "@/context/SocketContext"
 
 export default function LobbyPage() {
   const router = useRouter()
@@ -17,15 +18,9 @@ export default function LobbyPage() {
   const { lobby, setLobby } = useLobby()
 
   const [copied, setCopied] = useState(false)
-  const [operations, setOperations] = useState({
-    addition: true,
-    subtraction: true,
-    multiplication: true,
-    division: true,
-    exponents: false,
-  })
-  const [difficulty, setDifficulty] = useState<"easy" | "normal" | "hard">("easy")
-  const [gameTime, setGameTime] = useState<2 | 3 | 5>(2)
+  // const [operations, setOperations] = useState({...})
+  // const [difficulty, setDifficulty] = useState<"easy" | "normal" | "hard">("easy")
+  // const [gameTime, setGameTime] = useState<2 | 3 | 5>(2)
 
   const lobbyCode = lobby?.code
   const isHost = socket?.id === lobby?.host
@@ -64,6 +59,10 @@ export default function LobbyPage() {
   }
 
   const handleLeaveLobby = () => {
+    if (socket) {
+      socket.emit("leave-lobby")
+    }
+    setLobby(null)
     router.push("/")
   }
 
@@ -84,16 +83,24 @@ export default function LobbyPage() {
     }
   }
 
-  const handleOperationToggle = (operation: keyof typeof operations) => {
-    const newOperations = { ...operations, [operation]: !operations[operation] }
+  const handleSettingsChange = (settings: Partial<GameSettings>) => {
+    if (socket && isHost) {
+      socket.emit("update-settings", settings)
+    }
+  }
+
+  const handleOperationToggle = (operation: keyof GameSettings["operations"]) => {
+    if (!lobby?.settings?.operations) return
+
+    const newOperations = {
+      ...lobby.settings.operations,
+      [operation]: !lobby.settings.operations[operation],
+    }
 
     // Ensure at least one operation is selected
     const hasAtLeastOne = Object.values(newOperations).some((value) => value)
     if (hasAtLeastOne) {
-      setOperations(newOperations)
-      // if (socket && lobbyCode) {
-      //   socket.emit("update-operations", { lobbyCode, operations: newOperations })
-      // }
+      handleSettingsChange({ operations: newOperations })
     }
   }
 
@@ -235,47 +242,50 @@ export default function LobbyPage() {
               </span>
               <div className="flex gap-2">
                 <Button
-                  onClick={() => setGameTime(2)}
+                  onClick={() => handleSettingsChange({ duration: 120 })}
+                  disabled={!isHost}
                   size="sm"
                   className={`px-5 py-2 font-medium transition-all duration-300 ${
-                    gameTime === 2
+                    lobby?.settings?.duration === 120
                       ? theme === "nord"
                         ? "bg-[var(--quiz-accent-yellow)] text-[var(--quiz-background)] hover:bg-[var(--quiz-accent-yellow)]/90"
                         : "bg-[var(--quiz-sakura-accent)] text-white hover:bg-[var(--quiz-sakura-accent)]/90"
                       : theme === "nord"
                         ? "bg-[var(--quiz-background)] text-[var(--quiz-secondary)] border border-[var(--quiz-primary)] hover:bg-[var(--quiz-primary)]/20"
                         : "bg-[var(--quiz-sakura-background)] text-[var(--quiz-sakura-secondary)] border border-[var(--quiz-sakura-secondary)] hover:bg-[var(--quiz-sakura-secondary)]/20"
-                  }`}
+                  } ${!isHost ? "opacity-50 cursor-not-allowed" : ""}`}
                 >
                   2 mins
                 </Button>
                 <Button
-                  onClick={() => setGameTime(3)}
+                  onClick={() => handleSettingsChange({ duration: 180 })}
+                  disabled={!isHost}
                   size="sm"
                   className={`px-5 py-2 font-medium transition-all duration-300 ${
-                    gameTime === 3
+                    lobby?.settings?.duration === 180
                       ? theme === "nord"
                         ? "bg-[var(--quiz-accent-yellow)] text-[var(--quiz-background)] hover:bg-[var(--quiz-accent-yellow)]/90"
                         : "bg-[var(--quiz-sakura-accent)] text-white hover:bg-[var(--quiz-sakura-accent)]/90"
                       : theme === "nord"
                         ? "bg-[var(--quiz-background)] text-[var(--quiz-secondary)] border border-[var(--quiz-primary)] hover:bg-[var(--quiz-primary)]/20"
                         : "bg-[var(--quiz-sakura-background)] text-[var(--quiz-sakura-secondary)] border border-[var(--quiz-sakura-secondary)] hover:bg-[var(--quiz-sakura-secondary)]/20"
-                  }`}
+                  } ${!isHost ? "opacity-50 cursor-not-allowed" : ""}`}
                 >
                   3 mins
                 </Button>
                 <Button
-                  onClick={() => setGameTime(5)}
+                  onClick={() => handleSettingsChange({ duration: 300 })}
+                  disabled={!isHost}
                   size="sm"
                   className={`px-5 py-2 font-medium transition-all duration-300 ${
-                    gameTime === 5
+                    lobby?.settings?.duration === 300
                       ? theme === "nord"
                         ? "bg-[var(--quiz-accent-yellow)] text-[var(--quiz-background)] hover:bg-[var(--quiz-accent-yellow)]/90"
                         : "bg-[var(--quiz-sakura-accent)] text-white hover:bg-[var(--quiz-sakura-accent)]/90"
                       : theme === "nord"
                         ? "bg-[var(--quiz-background)] text-[var(--quiz-secondary)] border border-[var(--quiz-primary)] hover:bg-[var(--quiz-primary)]/20"
                         : "bg-[var(--quiz-sakura-background)] text-[var(--quiz-sakura-secondary)] border border-[var(--quiz-sakura-secondary)] hover:bg-[var(--quiz-sakura-secondary)]/20"
-                  }`}
+                  } ${!isHost ? "opacity-50 cursor-not-allowed" : ""}`}
                 >
                   5 mins
                 </Button>
@@ -293,47 +303,50 @@ export default function LobbyPage() {
               </span>
               <div className="flex gap-2">
                 <Button
-                  onClick={() => setDifficulty("easy")}
+                  onClick={() => handleSettingsChange({ difficulty: "easy" })}
+                  disabled={!isHost}
                   size="sm"
                   className={`px-6 py-2 font-medium transition-all duration-300 ${
-                    difficulty === "easy"
+                    lobby?.settings?.difficulty === "easy"
                       ? theme === "nord"
                         ? "bg-[var(--quiz-accent-yellow)] text-[var(--quiz-background)] hover:bg-[var(--quiz-accent-yellow)]/90"
                         : "bg-[var(--quiz-sakura-accent)] text-white hover:bg-[var(--quiz-sakura-accent)]/90"
                       : theme === "nord"
                         ? "bg-[var(--quiz-background)] text-[var(--quiz-secondary)] border border-[var(--quiz-primary)] hover:bg-[var(--quiz-primary)]/20"
                         : "bg-[var(--quiz-sakura-background)] text-[var(--quiz-sakura-secondary)] border border-[var(--quiz-sakura-secondary)] hover:bg-[var(--quiz-sakura-secondary)]/20"
-                  }`}
+                  } ${!isHost ? "opacity-50 cursor-not-allowed" : ""}`}
                 >
                   Easy
                 </Button>
                 <Button
-                  onClick={() => setDifficulty("normal")}
+                  onClick={() => handleSettingsChange({ difficulty: "medium" })}
+                  disabled={!isHost}
                   size="sm"
                   className={`px-6 py-2 font-medium transition-all duration-300 ${
-                    difficulty === "normal"
+                    lobby?.settings?.difficulty === "medium"
                       ? theme === "nord"
                         ? "bg-[var(--quiz-accent-yellow)] text-[var(--quiz-background)] hover:bg-[var(--quiz-accent-yellow)]/90"
                         : "bg-[var(--quiz-sakura-accent)] text-white hover:bg-[var(--quiz-sakura-accent)]/90"
                       : theme === "nord"
                         ? "bg-[var(--quiz-background)] text-[var(--quiz-secondary)] border border-[var(--quiz-primary)] hover:bg-[var(--quiz-primary)]/20"
                         : "bg-[var(--quiz-sakura-background)] text-[var(--quiz-sakura-secondary)] border border-[var(--quiz-sakura-secondary)] hover:bg-[var(--quiz-sakura-secondary)]/20"
-                  }`}
+                  } ${!isHost ? "opacity-50 cursor-not-allowed" : ""}`}
                 >
-                  Normal
+                  Medium
                 </Button>
                 <Button
-                  onClick={() => setDifficulty("hard")}
+                  onClick={() => handleSettingsChange({ difficulty: "hard" })}
+                  disabled={!isHost}
                   size="sm"
                   className={`px-6 py-2 font-medium transition-all duration-300 ${
-                    difficulty === "hard"
+                    lobby?.settings?.difficulty === "hard"
                       ? theme === "nord"
                         ? "bg-[var(--quiz-accent-yellow)] text-[var(--quiz-background)] hover:bg-[var(--quiz-accent-yellow)]/90"
                         : "bg-[var(--quiz-sakura-accent)] text-white hover:bg-[var(--quiz-sakura-accent)]/90"
                       : theme === "nord"
                         ? "bg-[var(--quiz-background)] text-[var(--quiz-secondary)] border border-[var(--quiz-primary)] hover:bg-[var(--quiz-primary)]/20"
                         : "bg-[var(--quiz-sakura-background)] text-[var(--quiz-sakura-secondary)] border border-[var(--quiz-sakura-secondary)] hover:bg-[var(--quiz-sakura-secondary)]/20"
-                  }`}
+                  } ${!isHost ? "opacity-50 cursor-not-allowed" : ""}`}
                 >
                   Hard
                 </Button>
@@ -355,16 +368,17 @@ export default function LobbyPage() {
               <div className="grid grid-cols-3 gap-2 mb-2">
                 <Button
                   onClick={() => handleOperationToggle("addition")}
+                  disabled={!isHost}
                   size="sm"
                   className={`px-3 py-2 font-medium transition-all duration-300 flex items-center justify-center gap-2 ${
-                    operations.addition
+                    lobby?.settings?.operations?.addition
                       ? theme === "nord"
                         ? "bg-[var(--quiz-accent-blue)] text-[var(--quiz-background)] hover:bg-[var(--quiz-accent-blue)]/90"
                         : "bg-[var(--quiz-sakura-accent)] text-white hover:bg-[var(--quiz-sakura-accent)]/90"
                       : theme === "nord"
                         ? "bg-[var(--quiz-background)] text-[var(--quiz-secondary)] border border-[var(--quiz-primary)] hover:bg-[var(--quiz-primary)]/20 opacity-60"
                         : "bg-[var(--quiz-sakura-background)] text-[var(--quiz-sakura-secondary)] border border-[var(--quiz-sakura-secondary)] hover:bg-[var(--quiz-sakura-secondary)]/20 opacity-60"
-                  }`}
+                  } ${!isHost ? "opacity-50 cursor-not-allowed" : ""}`}
                 >
                   Addition
                   <Plus className="h-4 w-4" strokeWidth={2.5} />
@@ -372,16 +386,17 @@ export default function LobbyPage() {
 
                 <Button
                   onClick={() => handleOperationToggle("subtraction")}
+                  disabled={!isHost}
                   size="sm"
                   className={`px-3 py-2 font-medium transition-all duration-300 flex items-center justify-center gap-2 ${
-                    operations.subtraction
+                    lobby?.settings?.operations?.subtraction
                       ? theme === "nord"
                         ? "bg-[var(--quiz-accent-blue)] text-[var(--quiz-background)] hover:bg-[var(--quiz-accent-blue)]/90"
                         : "bg-[var(--quiz-sakura-accent)] text-white hover:bg-[var(--quiz-sakura-accent)]/90"
                       : theme === "nord"
                         ? "bg-[var(--quiz-background)] text-[var(--quiz-secondary)] border border-[var(--quiz-primary)] hover:bg-[var(--quiz-primary)]/20 opacity-60"
                         : "bg-[var(--quiz-sakura-background)] text-[var(--quiz-sakura-secondary)] border border-[var(--quiz-sakura-secondary)] hover:bg-[var(--quiz-sakura-secondary)]/20 opacity-60"
-                  }`}
+                  } ${!isHost ? "opacity-50 cursor-not-allowed" : ""}`}
                 >
                   Subtraction
                   <Minus className="h-4 w-4" strokeWidth={2.5} />
@@ -389,16 +404,17 @@ export default function LobbyPage() {
 
                 <Button
                   onClick={() => handleOperationToggle("multiplication")}
+                  disabled={!isHost}
                   size="sm"
                   className={`px-3 py-2 font-medium transition-all duration-300 flex items-center justify-center gap-2 ${
-                    operations.multiplication
+                    lobby?.settings?.operations?.multiplication
                       ? theme === "nord"
                         ? "bg-[var(--quiz-accent-blue)] text-[var(--quiz-background)] hover:bg-[var(--quiz-accent-blue)]/90"
                         : "bg-[var(--quiz-sakura-accent)] text-white hover:bg-[var(--quiz-sakura-accent)]/90"
                       : theme === "nord"
                         ? "bg-[var(--quiz-background)] text-[var(--quiz-secondary)] border border-[var(--quiz-primary)] hover:bg-[var(--quiz-primary)]/20 opacity-60"
                         : "bg-[var(--quiz-sakura-background)] text-[var(--quiz-sakura-secondary)] border border-[var(--quiz-sakura-secondary)] hover:bg-[var(--quiz-sakura-secondary)]/20 opacity-60"
-                  }`}
+                  } ${!isHost ? "opacity-50 cursor-not-allowed" : ""}`}
                 >
                   Multiplication
                   <X className="h-4 w-4" strokeWidth={2.5} />
@@ -408,16 +424,17 @@ export default function LobbyPage() {
               <div className="grid grid-cols-2 gap-2">
                 <Button
                   onClick={() => handleOperationToggle("division")}
+                  disabled={!isHost}
                   size="sm"
                   className={`px-3 py-2 font-medium transition-all duration-300 flex items-center justify-center gap-2 ${
-                    operations.division
+                    lobby?.settings?.operations?.division
                       ? theme === "nord"
                         ? "bg-[var(--quiz-accent-blue)] text-[var(--quiz-background)] hover:bg-[var(--quiz-accent-blue)]/90"
                         : "bg-[var(--quiz-sakura-accent)] text-white hover:bg-[var(--quiz-sakura-accent)]/90"
                       : theme === "nord"
                         ? "bg-[var(--quiz-background)] text-[var(--quiz-secondary)] border border-[var(--quiz-primary)] hover:bg-[var(--quiz-primary)]/20 opacity-60"
                         : "bg-[var(--quiz-sakura-background)] text-[var(--quiz-sakura-secondary)] border border-[var(--quiz-sakura-secondary)] hover:bg-[var(--quiz-sakura-secondary)]/20 opacity-60"
-                  }`}
+                  } ${!isHost ? "opacity-50 cursor-not-allowed" : ""}`}
                 >
                   Division
                   <Divide className="h-4 w-4" strokeWidth={2.5} />
@@ -425,16 +442,17 @@ export default function LobbyPage() {
 
                 <Button
                   onClick={() => handleOperationToggle("exponents")}
+                  disabled={!isHost}
                   size="sm"
                   className={`px-3 py-2 font-medium transition-all duration-300 flex items-center justify-center gap-2 ${
-                    operations.exponents
+                    lobby?.settings?.operations?.exponents
                       ? theme === "nord"
                         ? "bg-[var(--quiz-accent-blue)] text-[var(--quiz-background)] hover:bg-[var(--quiz-accent-blue)]/90"
                         : "bg-[var(--quiz-sakura-accent)] text-white hover:bg-[var(--quiz-sakura-accent)]/90"
                       : theme === "nord"
                         ? "bg-[var(--quiz-background)] text-[var(--quiz-secondary)] border border-[var(--quiz-primary)] hover:bg-[var(--quiz-primary)]/20 opacity-60"
                         : "bg-[var(--quiz-sakura-background)] text-[var(--quiz-sakura-secondary)] border border-[var(--quiz-sakura-secondary)] hover:bg-[var(--quiz-sakura-secondary)]/20 opacity-60"
-                  }`}
+                  } ${!isHost ? "opacity-50 cursor-not-allowed" : ""}`}
                 >
                   Exponents
                   <span className="text-sm">a²</span>

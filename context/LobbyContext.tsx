@@ -1,28 +1,7 @@
 "use client"
 
 import { createContext, useContext, useState, type ReactNode } from "react"
-
-interface Player {
-  id: string
-  name: string
-  isHost: boolean
-  isReady: boolean
-  score: number
-  isYou?: boolean // isYou is optional and set client-side
-}
-
-interface GameSettings {
-  difficulty: "easy" | "medium" | "hard"
-  duration: number
-  questionCount: number
-}
-
-interface Lobby {
-  code: string
-  players: Player[]
-  settings: GameSettings
-  host: string
-}
+import type { Lobby, Player } from "./SocketContext"
 
 interface LobbyContextType {
   lobby: Lobby | null

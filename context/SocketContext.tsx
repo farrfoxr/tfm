@@ -4,7 +4,7 @@ import type React from "react"
 import { createContext, useContext, useEffect, useState } from "react"
 import { io, type Socket } from "socket.io-client"
 
-interface Player {
+export interface Player {
   id: string
   name: string
   isHost: boolean
@@ -13,20 +13,27 @@ interface Player {
   isYou?: boolean
 }
 
-interface Question {
+export interface Question {
   id: number
   equation: string
   answer: number
   operation: string
 }
 
-interface GameSettings {
+export interface GameSettings {
   difficulty: "easy" | "medium" | "hard"
-  duration: number
+  duration: number // This value is in seconds
   questionCount: number
+  operations: {
+    addition: boolean
+    subtraction: boolean
+    multiplication: boolean
+    division: boolean
+    exponents: boolean
+  }
 }
 
-interface GameState {
+export interface GameState {
   isActive: boolean
   currentQuestionIndex: number
   questions: Question[]
@@ -36,7 +43,7 @@ interface GameState {
   comboTimeRemaining: number
 }
 
-interface Lobby {
+export interface Lobby {
   code: string
   players: Player[]
   settings: GameSettings
@@ -117,3 +124,5 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
 
   return <SocketContext.Provider value={{ socket, isConnected }}>{children}</SocketContext.Provider>
 }
+
+
