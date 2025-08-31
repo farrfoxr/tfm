@@ -74,9 +74,14 @@ export default function LobbyPage() {
   }
 
   const handleReady = () => {
-    // if (socket && lobbyCode) {
-    //   socket.emit("player-ready", { lobbyCode })
-    // }
+    if (socket) {
+      socket.emit("toggle-ready", (response) => {
+        if (!response.success) {
+          console.error("Failed to toggle ready status:", response.error)
+        }
+        // The UI will update automatically when the "lobby-updated" event is received.
+      })
+    }
   }
 
   const handleOperationToggle = (operation: keyof typeof operations) => {
