@@ -5,25 +5,23 @@ import { createContext, useContext, useState, type ReactNode } from "react"
 interface Player {
   id: string
   name: string
+  isHost: boolean
+  isReady: boolean
   score: number
-  isYou?: boolean
+  isYou?: boolean // isYou is optional and set client-side
+}
+
+interface GameSettings {
+  difficulty: "easy" | "medium" | "hard"
+  duration: number
+  questionCount: number
 }
 
 interface Lobby {
   code: string
   players: Player[]
+  settings: GameSettings
   host: string
-  settings: {
-    difficulty: string
-    gameTime: number
-    operations: {
-      addition: boolean
-      subtraction: boolean
-      multiplication: boolean
-      division: boolean
-      exponents: boolean
-    }
-  }
 }
 
 interface LobbyContextType {

@@ -39,7 +39,7 @@ interface GameInterfaceProps {
   onNextQuestion?: () => void
 }
 
-export default function GameInterface({
+export function GameInterface({
   players,
   currentQuestion,
   timeRemaining,
@@ -426,3 +426,5 @@ export default function GameInterface({
     </div>
   )
 }
+
+export default GameInterface

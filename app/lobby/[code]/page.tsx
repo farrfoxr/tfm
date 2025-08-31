@@ -1,78 +1,22 @@
 "use client"
 
-import { useState, useEffect, useRef } from "react"
+import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
-import { ArrowLeft, Copy, Crown, Users, SettingsIcon, Plus, Minus, X, Divide, Check } from "lucide-react"
+import { Copy, Users, Settings, ArrowLeft, Plus, Minus, X, Divide, Crown, Check } from "lucide-react"
 import { useTheme } from "@/components/theme-provider"
 import { usePlayerName } from "@/hooks/use-player-name"
-import useSocket from "@/hooks/use-socket" // Added socket hook for real-time updates
-import GameInterface from "@/components/game-interface"
-import Leaderboard from "@/components/leaderboard"
+import { useSocket } from "@/context/SocketContext"
 import { useLobby } from "@/context/LobbyContext"
 
-interface Player {
-  id: number
-  name: string
-  isHost: boolean
-  isReady: boolean
-  isYou: boolean
-  score: number // Added score for game tracking
-}
-
-interface Question {
-  id: number
-  equation: string
-  answer: number
-  operation: string
-}
-
-interface GameState {
-  isActive: boolean
-  currentQuestionIndex: number
-  questions: Question[]
-  timeRemaining: number
-  comboCount: number
-  isComboActive: boolean
-  comboTimeRemaining: number
-  playerAnswer: string
-  showMultiplier: boolean
-  multiplierText: string
-  hasError: boolean
-  isEnded: boolean
-}
-
-export default function LobbyPage({ params }: { params: { code: string } }) {
+export default function LobbyPage() {
   const router = useRouter()
   const { theme } = useTheme()
-  const playerName = usePlayerName()
+  const { playerName } = usePlayerName()
   const { socket } = useSocket()
-
   const { lobby, setLobby } = useLobby()
 
-  const [lobbyCode] = useState(params.code as string)
-  const [isHost, setIsHost] = useState(false) // Initialize as false
   const [copied, setCopied] = useState(false)
-
-  const gameTimerRef = useRef<NodeJS.Timeout | null>(null)
-  const comboTimerRef = useRef<NodeJS.Timeout | null>(null)
-  const lastCorrectAnswerTime = useRef<number>(0)
-
-  const [gameState, setGameState] = useState<GameState>({
-    isActive: false,
-    currentQuestionIndex: 0,
-    questions: [],
-    timeRemaining: 120, // 120 seconds total game time
-    comboCount: 0,
-    isComboActive: false,
-    comboTimeRemaining: 20, // Start with 20s base timer
-    playerAnswer: "",
-    showMultiplier: false,
-    multiplierText: "1x",
-    hasError: false,
-    isEnded: false,
-  })
-
   const [operations, setOperations] = useState({
     addition: true,
     subtraction: true,
@@ -80,29 +24,18 @@ export default function LobbyPage({ params }: { params: { code: string } }) {
     division: true,
     exponents: false,
   })
-
   const [difficulty, setDifficulty] = useState<"easy" | "normal" | "hard">("easy")
   const [gameTime, setGameTime] = useState<2 | 3 | 5>(2)
 
+  const lobbyCode = lobby?.code
+  const isHost = socket?.id === lobby?.host
+
   useEffect(() => {
-    const code = params.code as string
-
-    // Validate lobby code format (should be exactly 4 letters)
-    const isValidLobbyCode = /^[A-Za-z]{4}$/.test(code)
-
-    if (!isValidLobbyCode) {
-      // Invalid lobby code format - redirect to home
+    if (!lobby) {
       router.replace("/")
       return
     }
-
-    // The lobby data is already available from context when user creates/joins
-    if (lobby) {
-      // Check if current player is host
-      const currentPlayer = lobby.players?.find((p: any) => p.name === playerName)
-      setIsHost(currentPlayer?.isHost || false)
-    }
-  }, [params.code, router, lobby, playerName])
+  }, [lobby, router])
 
   useEffect(() => {
     if (!socket) return
@@ -118,96 +51,15 @@ export default function LobbyPage({ params }: { params: { code: string } }) {
     }
   }, [socket, setLobby])
 
-  useEffect(() => {
-    if (playerName && lobby?.players) {
-      const updatedLobby = {
-        ...lobby,
-        players: lobby.players.map((player: any) => (player.isYou ? { ...player, name: playerName } : player)),
-      }
-      setLobby(updatedLobby)
-    }
-  }, [playerName, lobby, setLobby])
-
-  useEffect(() => {
-    if (gameState.isActive && gameState.timeRemaining > 0) {
-      gameTimerRef.current = setTimeout(() => {
-        setGameState((prev) => {
-          const newTimeRemaining = prev.timeRemaining - 1
-          if (newTimeRemaining <= 0) {
-            handleGameEnd()
-            return { ...prev, timeRemaining: 0 }
-          }
-          return { ...prev, timeRemaining: newTimeRemaining }
-        })
-      }, 1000)
-    }
-
-    return () => {
-      if (gameTimerRef.current) {
-        clearTimeout(gameTimerRef.current)
-      }
-    }
-  }, [gameState.isActive, gameState.timeRemaining])
-
-  useEffect(() => {
-    if (gameState.isActive && gameState.comboTimeRemaining > 0) {
-      comboTimerRef.current = setTimeout(() => {
-        setGameState((prev) => {
-          const newComboTime = prev.comboTimeRemaining - 1
-          if (newComboTime <= 0) {
-            // Timer expired - skip question and reset combo
-            const nextQuestionIndex = prev.currentQuestionIndex + 1
-            const needsMoreQuestions = nextQuestionIndex >= prev.questions.length
-
-            if (needsMoreQuestions) {
-              // Generate more questions
-              const newQuestions = generateQuestions(operations, difficulty)
-              return {
-                ...prev,
-                questions: [...prev.questions, ...newQuestions],
-                currentQuestionIndex: nextQuestionIndex,
-                comboCount: 0,
-                isComboActive: false,
-                comboTimeRemaining: 20, // Reset to base timer
-                hasError: false,
-              }
-            } else {
-              return {
-                ...prev,
-                currentQuestionIndex: nextQuestionIndex,
-                comboCount: 0,
-                isComboActive: false,
-                comboTimeRemaining: 20, // Reset to base timer
-                hasError: false,
-              }
-            }
-          }
-          return { ...prev, comboTimeRemaining: newComboTime }
-        })
-      }, 1000)
-    }
-
-    return () => {
-      if (comboTimerRef.current) {
-        clearTimeout(comboTimerRef.current)
-      }
-    }
-  }, [gameState.isActive, gameState.comboTimeRemaining])
-
-  useEffect(() => {
-    return () => {
-      if (gameTimerRef.current) clearTimeout(gameTimerRef.current)
-      if (comboTimerRef.current) clearTimeout(comboTimerRef.current)
-    }
-  }, [])
-
   const handleCopyCode = async () => {
-    try {
-      await navigator.clipboard.writeText(lobbyCode)
-      setCopied(true)
-      setTimeout(() => setCopied(false), 2000)
-    } catch (err) {
-      console.error("Failed to copy lobby code:", err)
+    if (lobbyCode) {
+      try {
+        await navigator.clipboard.writeText(lobbyCode)
+        setCopied(true)
+        setTimeout(() => setCopied(false), 2000)
+      } catch (err) {
+        console.error("Failed to copy lobby code:", err)
+      }
     }
   }
 
@@ -216,20 +68,15 @@ export default function LobbyPage({ params }: { params: { code: string } }) {
   }
 
   const handleLeaveGame = () => {
-    // Notify other players
-    socket.emit("leave-game", { lobbyCode })
-    setGameState((prev) => ({ ...prev, isActive: false }))
-    if (gameTimerRef.current) clearTimeout(gameTimerRef.current)
-    if (comboTimerRef.current) clearTimeout(comboTimerRef.current)
+    // if (socket && lobbyCode) {
+    //   socket.emit("leave-game", { lobbyCode })
+    // }
   }
 
   const handleReady = () => {
-    const updatedLobby = {
-      ...lobby,
-      players: lobby.players.map((player: any) => (player.isYou ? { ...player, isReady: !player.isReady } : player)),
-    }
-    setLobby(updatedLobby)
-    socket.emit("player-ready", { lobbyCode })
+    // if (socket && lobbyCode) {
+    //   socket.emit("player-ready", { lobbyCode })
+    // }
   }
 
   const handleOperationToggle = (operation: keyof typeof operations) => {
@@ -239,443 +86,44 @@ export default function LobbyPage({ params }: { params: { code: string } }) {
     const hasAtLeastOne = Object.values(newOperations).some((value) => value)
     if (hasAtLeastOne) {
       setOperations(newOperations)
-      socket.emit("update-operations", { lobbyCode, operations: newOperations })
+      // if (socket && lobbyCode) {
+      //   socket.emit("update-operations", { lobbyCode, operations: newOperations })
+      // }
     }
   }
 
   const handleAnswerSubmit = (answer: string) => {
-    const currentQuestion = gameState.questions[gameState.currentQuestionIndex]
-    const isCorrect = Number.parseInt(answer) === currentQuestion.answer
-    const currentTime = Date.now()
-
-    if (isCorrect) {
-      // Calculate current multiplier based on combo count
-      let currentMultiplier = 1.0
-      if (gameState.comboCount >= 2) {
-        // Combo starts at 3rd consecutive correct (comboCount = 2)
-        const comboLevel = gameState.comboCount - 1 // 2nd correct = level 1
-        currentMultiplier = Math.min(1.1 + (comboLevel - 1) * 0.05, 2.0) // Cap at 2.0x
-      }
-
-      // Calculate score: base 100 points × multiplier
-      const scoreGain = Math.round(100 * currentMultiplier)
-
-      // Update player score
-      const updatedLobby = {
-        ...lobby,
-        players: lobby.players.map((player: any) =>
-          player.isYou ? { ...player, score: player.score + scoreGain } : player,
-        ),
-      }
-      setLobby(updatedLobby)
-      socket.emit("update-score", { lobbyCode, scoreGain })
-
-      // Check if combo should continue (within 7 seconds of last correct answer)
-      const timeSinceLastCorrect = currentTime - lastCorrectAnswerTime.current
-      const shouldContinueCombo = gameState.comboCount > 0 && timeSinceLastCorrect <= 7000
-
-      const newComboCount = shouldContinueCombo ? gameState.comboCount + 1 : 1
-      const isComboActive = newComboCount >= 2 // Combo visual starts at 2 consecutive correct answers
-
-      lastCorrectAnswerTime.current = currentTime
-
-      // Show multiplier feedback
-      const nextMultiplier = newComboCount >= 2 ? Math.min(1.1 + (newComboCount - 2) * 0.05, 2.0) : 1.0
-      const multiplierText = `${nextMultiplier.toFixed(2)}x`
-
-      setGameState((prev) => ({
-        ...prev,
-        comboCount: newComboCount,
-        isComboActive,
-        comboTimeRemaining: isComboActive ? 10 : 20, // 10s for combo, 20s for base
-        showMultiplier: true,
-        multiplierText,
-        hasError: false,
-      }))
-
-      // Hide multiplier after 2 seconds
-      setTimeout(() => {
-        setGameState((prev) => ({ ...prev, showMultiplier: false }))
-      }, 2000)
-
-      // Move to next question
-      setTimeout(() => {
-        handleNextQuestion()
-      }, 500)
-    } else {
-      // Wrong answer - apply penalty based on current multiplier
-      let currentMultiplier = 1.0
-      if (gameState.comboCount >= 2) {
-        const comboLevel = gameState.comboCount - 1
-        currentMultiplier = Math.min(1.1 + (comboLevel - 1) * 0.05, 2.0)
-      }
-
-      // Calculate penalty: base 25 points × min(multiplier, 1.5)
-      const penaltyMultiplier = Math.min(currentMultiplier, 1.5)
-      const scoreLoss = Math.round(25 * penaltyMultiplier)
-
-      // Update player score (subtract penalty)
-      const updatedLobby = {
-        ...lobby,
-        players: lobby.players.map((player: any) =>
-          player.isYou ? { ...player, score: Math.max(0, player.score - scoreLoss) } : player,
-        ),
-      }
-      setLobby(updatedLobby)
-      socket.emit("update-score", { lobbyCode, scoreLoss: -scoreLoss })
-
-      // Wrong answer - break combo and show error
-      setGameState((prev) => ({
-        ...prev,
-        comboCount: 0,
-        isComboActive: false,
-        comboTimeRemaining: 20, // Reset to base timer
-        hasError: true,
-        showMultiplier: false,
-      }))
-
-      // Clear error state after animation
-      setTimeout(() => {
-        setGameState((prev) => ({ ...prev, hasError: false }))
-      }, 500)
-
-      // No longer wait for timer - immediately move to next question
-      handleNextQuestion()
-    }
-  }
-
-  const handleNextQuestion = () => {
-    setGameState((prev) => {
-      const nextQuestionIndex = prev.currentQuestionIndex + 1
-      const needsMoreQuestions = nextQuestionIndex >= prev.questions.length
-
-      if (needsMoreQuestions) {
-        // Generate more questions
-        const newQuestions = generateQuestions(operations, difficulty)
-        return {
-          ...prev,
-          questions: [...prev.questions, ...newQuestions],
-          currentQuestionIndex: nextQuestionIndex,
-          comboTimeRemaining: prev.isComboActive ? 10 : 20, // Reset timer for new question
-        }
-      } else {
-        return {
-          ...prev,
-          currentQuestionIndex: nextQuestionIndex,
-          comboTimeRemaining: prev.isComboActive ? 10 : 20, // Reset timer for new question
-        }
-      }
-    })
+    // Game logic will be handled by server
   }
 
   const handleStartGame = () => {
-    // Send game start signal to all players
-    socket.emit("start-game", { lobbyCode })
-    const questions = generateQuestions(operations, difficulty)
-    const timeInSeconds = gameTime * 60
-    setGameState((prev) => ({
-      ...prev,
-      isActive: true,
-      isEnded: false,
-      questions,
-      currentQuestionIndex: 0,
-      timeRemaining: timeInSeconds,
-      comboCount: 0,
-      isComboActive: false,
-      comboTimeRemaining: 20,
-      playerAnswer: "",
-      showMultiplier: false,
-      hasError: false,
-    }))
-    lastCorrectAnswerTime.current = 0
+    // socket.emit("start-game", { lobbyCode })
   }
 
-  const handleGameEnd = () => {
-    setTimeout(() => {
-      setGameState((prev) => ({ ...prev, isActive: false, isEnded: true }))
-    }, 2000)
-
-    if (gameTimerRef.current) clearTimeout(gameTimerRef.current)
-    if (comboTimerRef.current) clearTimeout(comboTimerRef.current)
-  }
+  const handleGameEnd = () => {}
 
   const handleReturnToLobby = () => {
-    const timeInSeconds = gameTime * 60
-    setGameState((prev) => ({
-      ...prev,
-      isActive: false,
-      isEnded: false,
-      currentQuestionIndex: 0,
-      questions: [],
-      timeRemaining: timeInSeconds,
-      comboCount: 0,
-      isComboActive: false,
-      comboTimeRemaining: 20,
-      playerAnswer: "",
-      showMultiplier: false,
-      multiplierText: "1x",
-      hasError: false,
-    }))
-    // Reset all players' ready status
-    const updatedLobby = {
-      ...lobby,
-      players: lobby.players.map((player: any) => ({ ...player, isReady: false })),
-    }
-    setLobby(updatedLobby)
-    socket.emit("reset-lobby", { lobbyCode })
+    // if (socket && lobbyCode) {
+    //   socket.emit("reset-lobby", { lobbyCode })
+    // }
   }
 
-  const generateQuestions = (enabledOps: typeof operations, diff: "easy" | "normal" | "hard"): Question[] => {
-    const questions: Question[] = []
-    const ops = Object.entries(enabledOps)
-      .filter(([_, enabled]) => enabled)
-      .map(([op, _]) => op)
-
-    const generateWeightedNumber = (min: number, max: number, favorLarger = true): number => {
-      if (!favorLarger || max <= 9) {
-        return Math.floor(Math.random() * (max - min + 1)) + min
-      }
-
-      // Weight system: 15% chance for 1-digit, 85% chance for multi-digit
-      const useSmall = Math.random() < 0.15
-      if (useSmall && min <= 9) {
-        return Math.floor(Math.random() * Math.min(9, max) + 1) + (min <= 1 ? 0 : min - 1)
-      } else {
-        const largerMin = Math.max(min, 10)
-        return Math.floor(Math.random() * (max - largerMin + 1)) + largerMin
-      }
-    }
-
-    const generateAddition = (): { equation: string; answer: number } => {
-      let maxRange: number
-      if (diff === "easy") {
-        maxRange = 99 // 1-2 digits
-      } else if (diff === "normal") {
-        maxRange = 999 // up to 3 digits
-      } else {
-        maxRange = 99999 // up to 5 digits
-      }
-
-      const a = generateWeightedNumber(1, maxRange)
-      const b = generateWeightedNumber(1, maxRange)
-      return { equation: `${a} + ${b}`, answer: a + b }
-    }
-
-    const generateSubtraction = (): { equation: string; answer: number } => {
-      let maxRange: number
-      if (diff === "easy") {
-        maxRange = 99 // 1-2 digits
-      } else if (diff === "normal") {
-        maxRange = 999 // up to 3 digits
-      } else {
-        maxRange = 99999 // up to 5 digits
-      }
-
-      let a = generateWeightedNumber(10, maxRange)
-      let b = generateWeightedNumber(10, maxRange)
-
-      // Ensure a > b to avoid negative results
-      if (b > a) {
-        ;[a, b] = [b, a]
-      }
-
-      return { equation: `${a} - ${b}`, answer: a - b }
-    }
-
-    const generateMultiplication = (): { equation: string; answer: number } => {
-      let a: number, b: number
-
-      if (diff === "easy") {
-        // Easy: one 1-digit (1-9), other 1-2 digits (1-99)
-        const useFirstAsSmall = Math.random() < 0.5
-        if (useFirstAsSmall) {
-          a = Math.floor(Math.random() * 9) + 1 // 1 digit
-          b = generateWeightedNumber(1, 99, false) // 1-2 digits
-        } else {
-          a = generateWeightedNumber(1, 99, false) // 1-2 digits
-          b = Math.floor(Math.random() * 9) + 1 // 1 digit
-        }
-      } else if (diff === "normal") {
-        // Normal: both up to 2 digits (1-99)
-        a = generateWeightedNumber(1, 99, false)
-        b = generateWeightedNumber(1, 99, false)
-      } else {
-        // Hard: both up to 3 digits (1-999)
-        a = generateWeightedNumber(1, 999, false)
-        b = generateWeightedNumber(1, 999, false)
-      }
-
-      return { equation: `${a} × ${b}`, answer: a * b }
-    }
-
-    const generateDivision = (): { equation: string; answer: number } => {
-      let a: number, b: number
-
-      if (diff === "easy") {
-        // Easy: either divisor or quotient is 1-digit, other is 1-2 digits
-        const useDivisorAsSmall = Math.random() < 0.5
-        if (useDivisorAsSmall) {
-          a = Math.floor(Math.random() * 9) + 2 // 1 digit divisor (2-9)
-          b = generateWeightedNumber(1, 99, false) // 1-2 digit quotient
-        } else {
-          a = generateWeightedNumber(2, 99, false) // 1-2 digit divisor
-          b = Math.floor(Math.random() * 9) + 1 // 1 digit quotient
-        }
-      } else if (diff === "normal") {
-        // Normal: both up to 2 digits
-        a = generateWeightedNumber(2, 99, false) // Divisor
-        b = generateWeightedNumber(1, 99, false) // Quotient
-      } else {
-        // Hard: both up to 3 digits
-        a = generateWeightedNumber(2, 999, false) // Divisor
-        b = generateWeightedNumber(1, 999, false) // Quotient
-      }
-
-      const c = a * b // Dividend
-      return { equation: `${c} ÷ ${a}`, answer: b }
-    }
-
-    const generateExponents = (): { equation: string; answer: number } => {
-      let baseRange: number
-      if (diff === "easy") {
-        baseRange = 20 // base 1-20
-      } else if (diff === "normal") {
-        baseRange = 30 // base 1-30
-      } else {
-        baseRange = 50 // base 1-50
-      }
-
-      const base = Math.floor(Math.random() * baseRange) + 1
-      const operationType = Math.floor(Math.random() * 3) // 0: x², 1: x³, 2: √(x²)
-
-      switch (operationType) {
-        case 0: // x²
-          return { equation: `${base}²`, answer: base * base }
-        case 1: // x³
-          return { equation: `${base}³`, answer: base * base * base }
-        case 2: // √(x²)
-          const squared = base * base
-          return { equation: `√${squared}`, answer: base }
-        default:
-          return { equation: `${base}²`, answer: base * base }
-      }
-    }
-
-    const getWeightedOperation = (): string => {
-      const weights: { [key: string]: number } = {}
-
-      if (diff === "easy") {
-        // Easy: Add/Sub 30% each, Mult/Div 15% each, Exp 10%
-        if (ops.includes("addition")) weights.addition = 30
-        if (ops.includes("subtraction")) weights.subtraction = 30
-        if (ops.includes("multiplication")) weights.multiplication = 15
-        if (ops.includes("division")) weights.division = 15
-        if (ops.includes("exponents")) weights.exponents = 10
-      } else if (diff === "normal") {
-        // Normal: Add/Sub 25% each, Mult/Div 20% each, Exp 10%
-        if (ops.includes("addition")) weights.addition = 25
-        if (ops.includes("subtraction")) weights.subtraction = 25
-        if (ops.includes("multiplication")) weights.multiplication = 20
-        if (ops.includes("division")) weights.division = 20
-        if (ops.includes("exponents")) weights.exponents = 10
-      } else {
-        // Hard: Add/Sub 20% each, Mult/Div 25% each, Exp 10%
-        if (ops.includes("addition")) weights.addition = 20
-        if (ops.includes("subtraction")) weights.subtraction = 20
-        if (ops.includes("multiplication")) weights.multiplication = 25
-        if (ops.includes("division")) weights.division = 25
-        if (ops.includes("exponents")) weights.exponents = 10
-      }
-
-      // Normalize weights to sum to 100
-      const totalWeight = Object.values(weights).reduce((sum, weight) => sum + weight, 0)
-      const normalizedWeights: { [key: string]: number } = {}
-      Object.entries(weights).forEach(([op, weight]) => {
-        normalizedWeights[op] = (weight / totalWeight) * 100
-      })
-
-      // Select operation based on weights
-      const random = Math.random() * 100
-      let cumulative = 0
-      for (const [operation, weight] of Object.entries(normalizedWeights)) {
-        cumulative += weight
-        if (random <= cumulative) {
-          return operation
-        }
-      }
-
-      return ops[0] // Fallback
-    }
-
-    // Generate 40 questions
-    for (let i = 0; i < 40; i++) {
-      const operation = getWeightedOperation()
-      let questionData: { equation: string; answer: number }
-
-      switch (operation) {
-        case "addition":
-          questionData = generateAddition()
-          break
-        case "subtraction":
-          questionData = generateSubtraction()
-          break
-        case "multiplication":
-          questionData = generateMultiplication()
-          break
-        case "division":
-          questionData = generateDivision()
-          break
-        case "exponents":
-          questionData = generateExponents()
-          break
-        default:
-          questionData = generateAddition() // Fallback
-      }
-
-      questions.push({
-        id: i + 1,
-        equation: questionData.equation,
-        answer: questionData.answer,
-        operation,
-      })
-    }
-
-    return questions
-  }
-
-  const currentPlayer = lobby?.players?.find((p: any) => p.isYou)
   const allPlayersReady = lobby?.players?.every((player: any) => player.isReady)
-  const canStartGame = isHost && currentPlayer?.isReady && (allPlayersReady || true) && lobby?.players?.length >= 1 // Debug: Allow start even if not all players ready
+  const currentPlayer = lobby?.players?.find((p: any) => p.id === socket?.id)
+  const canStartGame =
+    isHost && currentPlayer?.isReady && (allPlayersReady || true) && (lobby?.players?.length ?? 0) >= 1
 
-  if (gameState.isEnded) {
-    return <Leaderboard players={lobby?.players || []} onReturnToLobby={handleReturnToLobby} />
+  if (!lobby) {
+    return <div>Loading Lobby...</div>
   }
 
-  if (gameState.isActive) {
-    const currentQuestion = gameState.questions[gameState.currentQuestionIndex]
-    if (!currentQuestion) {
-      return <div>Loading...</div>
-    }
+  // if (gameState.isEnded) {
+  //   return <Leaderboard players={lobby?.players || []} onReturnToLobby={handleReturnToLobby} />
+  // }
 
-    return (
-      <GameInterface
-        players={lobby?.players || []}
-        currentQuestion={currentQuestion}
-        timeRemaining={gameState.timeRemaining}
-        comboCount={gameState.comboCount}
-        isComboActive={gameState.isComboActive}
-        comboTimeRemaining={gameState.comboTimeRemaining}
-        showMultiplier={gameState.showMultiplier}
-        multiplierText={gameState.multiplierText}
-        hasError={gameState.hasError}
-        myRank={[...(lobby?.players || [])].sort((a, b) => b.score - a.score).findIndex((p) => p.isYou) + 1}
-        onAnswerSubmit={handleAnswerSubmit}
-        onLeaveGame={handleLeaveGame}
-        onGameEnd={handleGameEnd}
-        onNextQuestion={handleNextQuestion}
-      />
-    )
-  }
+  // if (gameState.isActive) {
+  //   return <GameInterface ... />
+  // }
 
   return (
     <div className={`min-h-screen ${theme === "nord" ? "theme-nord" : "theme-sakura"}`}>
@@ -758,7 +206,7 @@ export default function LobbyPage({ params }: { params: { code: string } }) {
           }`}
         >
           <div className="flex items-center gap-3 mb-6">
-            <SettingsIcon
+            <Settings
               className={`h-6 w-6 ${theme === "nord" ? "text-[var(--quiz-text)]" : "text-[var(--quiz-sakura-text)]"}`}
             />
             <h2
@@ -999,17 +447,9 @@ export default function LobbyPage({ params }: { params: { code: string } }) {
               : "bg-[var(--quiz-sakura-muted)] border border-[var(--quiz-sakura-secondary)]"
           }`}
         >
-          <div className="flex items-center gap-3 mb-6">
-            <Users
-              className={`h-6 w-6 ${theme === "nord" ? "text-[var(--quiz-text)]" : "text-[var(--quiz-sakura-text)]"}`}
-            />
-            <h2
-              className={`text-xl font-bold ${
-                theme === "nord" ? "text-[var(--quiz-text)]" : "text-[var(--quiz-sakura-text)]"
-              }`}
-            >
-              Players ({lobby?.players?.length ?? 0}/20)
-            </h2>
+          <div className="flex items-center gap-2 mb-6">
+            <Users className="h-5 w-5" />
+            <span className="text-lg font-medium">{lobby?.players?.length || 0} Players</span>
           </div>
 
           {/* Player List */}
@@ -1022,7 +462,7 @@ export default function LobbyPage({ params }: { params: { code: string } }) {
                 }`}
               >
                 <div className="flex items-center gap-3">
-                  {player.isHost && (
+                  {player.id === lobby?.host && (
                     <Crown
                       className={`h-5 w-5 ${
                         theme === "nord" ? "text-[var(--quiz-accent-yellow)]" : "text-[var(--quiz-sakura-accent)]"
@@ -1036,7 +476,7 @@ export default function LobbyPage({ params }: { params: { code: string } }) {
                   >
                     {player.name}
                   </span>
-                  {player.isYou && (
+                  {player.id === socket?.id && (
                     <span
                       className={`px-2 py-1 text-xs rounded-full ${
                         theme === "nord"
@@ -1056,7 +496,7 @@ export default function LobbyPage({ params }: { params: { code: string } }) {
                       Ready
                     </div>
                   )}
-                  {player.isHost && (
+                  {player.id === lobby?.host && (
                     <span
                       className={`px-3 py-1 text-sm rounded-full ${
                         theme === "nord"
@@ -1097,7 +537,7 @@ export default function LobbyPage({ params }: { params: { code: string } }) {
 
               {currentPlayer?.isReady && (
                 <Button
-                  onClick={handleStartGame} // Connected to game start handler
+                  onClick={handleStartGame}
                   disabled={!canStartGame}
                   size="lg"
                   className={`h-16 px-12 text-xl font-bold transition-all duration-300 ${

@@ -16,7 +16,7 @@ interface LeaderboardProps {
   onReturnToLobby: () => void
 }
 
-export default function Leaderboard({ players, onReturnToLobby }: LeaderboardProps) {
+export function Leaderboard({ players, onReturnToLobby }: LeaderboardProps) {
   const { theme } = useTheme()
 
   const sortedPlayers = [...players].sort((a, b) => b.score - a.score).slice(0, 3)
@@ -207,3 +207,5 @@ export default function Leaderboard({ players, onReturnToLobby }: LeaderboardPro
     </div>
   )
 }
+
+export default Leaderboard
