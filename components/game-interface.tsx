@@ -7,20 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { ArrowLeft } from "lucide-react"
 import { useTheme } from "@/components/theme-provider"
-
-interface Player {
-  id: number
-  name: string
-  score: number
-  isYou: boolean
-}
-
-interface Question {
-  id: number
-  equation: string
-  answer: number
-  operation: string
-}
+import type { Player, Question } from "@/context/SocketContext"
 
 interface GameInterfaceProps {
   players: Player[]

@@ -3,13 +3,7 @@
 import { Button } from "@/components/ui/button"
 import { Crown, Medal, Trophy, Users } from "lucide-react"
 import { useTheme } from "@/components/theme-provider"
-
-interface Player {
-  id: number
-  name: string
-  score: number
-  isYou: boolean
-}
+import type { Player } from "@/context/SocketContext"
 
 interface LeaderboardProps {
   players: Player[]

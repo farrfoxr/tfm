@@ -9,6 +9,8 @@ import { usePlayerName } from "@/hooks/use-player-name"
 import { useSocket } from "@/context/SocketContext"
 import { useLobby } from "@/context/LobbyContext"
 import type { GameSettings } from "@/context/SocketContext"
+import { GameInterface } from "@/components/game-interface"
+import { Leaderboard } from "@/components/leaderboard"
 
 export default function LobbyPage() {
   const router = useRouter()
@@ -45,6 +47,27 @@ export default function LobbyPage() {
       socket.off("lobby-updated", handleLobbyUpdated)
     }
   }, [socket, setLobby])
+
+  useEffect(() => {
+    if (!socket) return
+
+    const handleGameStarted = (gameState: any) => {
+      // Update the lobby state with the new game state
+      if (lobby) {
+        setLobby({
+          ...lobby,
+          gameState,
+          isGameActive: true,
+        })
+      }
+    }
+
+    socket.on("game-started", handleGameStarted)
+
+    return () => {
+      socket.off("game-started", handleGameStarted)
+    }
+  }, [socket, setLobby, lobby])
 
   const handleCopyCode = async () => {
     if (lobbyCode) {
@@ -109,7 +132,9 @@ export default function LobbyPage() {
   }
 
   const handleStartGame = () => {
-    // socket.emit("start-game", { lobbyCode })
+    if (socket) {
+      socket.emit("start-game")
+    }
   }
 
   const handleGameEnd = () => {}
@@ -129,14 +154,29 @@ export default function LobbyPage() {
     return <div>Loading Lobby...</div>
   }
 
-  // if (gameState.isEnded) {
-  //   return <Leaderboard players={lobby?.players || []} onReturnToLobby={handleReturnToLobby} />
-  // }
+  if (lobby.gameState?.isEnded) {
+    return <Leaderboard players={lobby.players || []} onReturnToLobby={handleReturnToLobby} />
+  }
 
-  // if (gameState.isActive) {
-  //   return <GameInterface ... />
-  // }
+  if (lobby.isGameActive && lobby.gameState) {
+    return (
+      <GameInterface
+        players={lobby.players}
+        currentQuestion={lobby.gameState.questions[lobby.gameState.currentQuestionIndex]}
+        timeRemaining={lobby.gameState.timeRemaining}
+        comboCount={lobby.gameState.comboCount}
+        isComboActive={lobby.gameState.isComboActive}
+        comboTimeRemaining={lobby.gameState.comboTimeRemaining}
+        showMultiplier={false} // Placeholder
+        multiplierText="1x" // Placeholder
+        hasError={false} // Placeholder
+        onAnswerSubmit={handleAnswerSubmit}
+        onLeaveGame={handleLeaveGame}
+      />
+    )
+  }
 
+  // Default to rendering the Lobby UI
   return (
     <div className={`min-h-screen ${theme === "nord" ? "theme-nord" : "theme-sakura"}`}>
       <div className="container mx-auto px-4 py-6 max-w-4xl">
