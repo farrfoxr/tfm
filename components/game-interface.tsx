@@ -8,41 +8,20 @@ import { Input } from "@/components/ui/input"
 import { ArrowLeft } from "lucide-react"
 import { useTheme } from "@/components/theme-provider"
 import type { Player, Question } from "@/context/SocketContext"
+import { useSocket } from "@/context/SocketContext"
 
 interface GameInterfaceProps {
   players: Player[]
-  currentQuestion: Question
+  questions: Question[]
   timeRemaining: number
-  comboCount: number
-  isComboActive: boolean
-  comboTimeRemaining: number
-  showMultiplier: boolean
-  multiplierText: string
-  hasError: boolean
-  myRank?: number
-  onAnswerSubmit: (answer: string) => void
+  onAnswerSubmit: (payload: { questionId: number; answer: string }) => void
   onLeaveGame: () => void
-  onGameEnd?: () => void
-  onNextQuestion?: () => void
 }
 
-export function GameInterface({
-  players,
-  currentQuestion,
-  timeRemaining,
-  comboCount,
-  isComboActive,
-  comboTimeRemaining,
-  showMultiplier,
-  multiplierText,
-  hasError,
-  myRank,
-  onAnswerSubmit,
-  onLeaveGame,
-  onGameEnd,
-  onNextQuestion,
-}: GameInterfaceProps) {
+export function GameInterface({ players, questions, timeRemaining, onAnswerSubmit, onLeaveGame }: GameInterfaceProps) {
   const { theme } = useTheme()
+  const { socket } = useSocket()
+  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0)
   const [answer, setAnswer] = useState("")
   const inputRef = useRef<HTMLInputElement>(null)
   const [showCountdown, setShowCountdown] = useState(false)
@@ -50,6 +29,14 @@ export function GameInterface({
   const [showGameOver, setShowGameOver] = useState(false)
   const [hasSkippedQuestion, setHasSkippedQuestion] = useState(false)
   const [gameEndRequested, setGameEndRequested] = useState(false)
+  const [comboCount, setComboCount] = useState(0)
+  const [isComboActive, setIsComboActive] = useState(false)
+  const [comboTimeRemaining, setComboTimeRemaining] = useState(20)
+  const [hasError, setHasError] = useState(false)
+  const [showMultiplier, setShowMultiplier] = useState(false)
+  const [multiplierText, setMultiplierText] = useState("1x")
+
+  const currentQuestion = questions[currentQuestionIndex]
 
   useEffect(() => {
     if (inputRef.current && !showCountdown && !showGameOver) {
@@ -60,6 +47,11 @@ export function GameInterface({
   useEffect(() => {
     setAnswer("")
     setHasSkippedQuestion(false)
+    setComboCount(0)
+    setIsComboActive(false)
+    setComboTimeRemaining(20)
+    setShowMultiplier(false)
+    setMultiplierText("1x")
   }, [currentQuestion.id])
 
   useEffect(() => {
@@ -84,17 +76,27 @@ export function GameInterface({
 
       setTimeout(() => {
         setShowGameOver(false)
-        onGameEnd?.()
+        // Assuming onGameEnd is handled elsewhere
       }, 2000)
     }
-  }, [gameEndRequested, showGameOver, onGameEnd])
+  }, [gameEndRequested, showGameOver])
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    if (answer.trim() && !showGameOver) {
-      const isCorrect = Number.parseInt(answer.trim()) === currentQuestion.answer
-      onAnswerSubmit(answer.trim())
+    if (answer.trim() && !showGameOver && currentQuestion) {
+      onAnswerSubmit({
+        questionId: currentQuestion.id,
+        answer: answer.trim(),
+      })
+      setCurrentQuestionIndex((prevIndex) => prevIndex + 1)
       setAnswer("")
+      setHasError(false)
+      setComboCount((prev) => prev + 1)
+      if (comboCount >= 2) {
+        setIsComboActive(true)
+        setShowMultiplier(true)
+        setMultiplierText(`${Math.min(comboCount + 1, 5)}x`)
+      }
     }
   }
 
@@ -167,7 +169,7 @@ export function GameInterface({
           </Button>
 
           <div
-            className={`rounded-2xl p-4 min-w-[280px] shadow-sm`} // reduced shadow from shadow-lg to shadow-sm
+            className={`rounded-2xl p-4 min-w-[280px] shadow-sm`}
             style={{
               backgroundColor: theme === "nord" ? "rgba(47, 53, 65, 0.4)" : "rgba(229, 221, 214, 0.4)",
             }}
@@ -223,7 +225,7 @@ export function GameInterface({
                 </div>
               ))}
 
-              {myRank && myRank > 3 && currentPlayer && (
+              {sortedPlayers.length > 3 && currentPlayer && (
                 <div
                   className={`flex justify-between items-center mt-3 pt-2 border-t ${
                     theme === "nord"
@@ -237,7 +239,7 @@ export function GameInterface({
                         theme === "nord" ? "text-[var(--quiz-secondary)]" : "text-[var(--quiz-sakura-secondary)]"
                       }`}
                     >
-                      {myRank}.
+                      {sortedPlayers.indexOf(currentPlayer) + 1}.
                     </span>
                     <span
                       className={`text-sm font-semibold ${

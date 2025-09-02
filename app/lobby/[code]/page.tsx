@@ -127,8 +127,10 @@ export default function LobbyPage() {
     }
   }
 
-  const handleAnswerSubmit = (answer: string) => {
-    // Game logic will be handled by server
+  const handleAnswerSubmit = (payload: { questionId: number; answer: string }) => {
+    if (socket) {
+      socket.emit("submit-answer", payload)
+    }
   }
 
   const handleStartGame = () => {
@@ -162,14 +164,8 @@ export default function LobbyPage() {
     return (
       <GameInterface
         players={lobby.players}
-        currentQuestion={lobby.gameState.questions[lobby.gameState.currentQuestionIndex]}
+        questions={lobby.gameState.questions}
         timeRemaining={lobby.gameState.timeRemaining}
-        comboCount={lobby.gameState.comboCount}
-        isComboActive={lobby.gameState.isComboActive}
-        comboTimeRemaining={lobby.gameState.comboTimeRemaining}
-        showMultiplier={false} // Placeholder
-        multiplierText="1x" // Placeholder
-        hasError={false} // Placeholder
         onAnswerSubmit={handleAnswerSubmit}
         onLeaveGame={handleLeaveGame}
       />
