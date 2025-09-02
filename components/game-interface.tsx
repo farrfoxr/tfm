@@ -83,20 +83,37 @@ export function GameInterface({ players, questions, timeRemaining, onAnswerSubmi
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    if (answer.trim() && !showGameOver && currentQuestion) {
-      onAnswerSubmit({
+    if (answer.trim() && !showGameOver && socket && currentQuestion) {
+      const isCorrect = Number.parseInt(answer.trim()) === currentQuestion.answer
+
+      if (isCorrect) {
+        const newCombo = comboCount + 1
+        setComboCount(newCombo)
+        if (newCombo >= 2) {
+          setIsComboActive(true)
+          const comboLevel = Math.max(0, newCombo - 1)
+          const multiplier = Math.min(1.0 + comboLevel * 0.05, 2.0)
+          setMultiplierText(`${multiplier.toFixed(2)}x`)
+          setShowMultiplier(true)
+          setTimeout(() => setShowMultiplier(false), 2000)
+        }
+      } else {
+        // Incorrect answer
+        setComboCount(0)
+        setIsComboActive(false)
+        setHasError(true)
+        setTimeout(() => setHasError(false), 500) // Duration of the shake animation
+      }
+
+      // Send the answer to the server for official scoring
+      socket.emit("submit-answer", {
         questionId: currentQuestion.id,
         answer: answer.trim(),
       })
+
+      // Advance to the next question and clear the input
       setCurrentQuestionIndex((prevIndex) => prevIndex + 1)
       setAnswer("")
-      setHasError(false)
-      setComboCount((prev) => prev + 1)
-      if (comboCount >= 2) {
-        setIsComboActive(true)
-        setShowMultiplier(true)
-        setMultiplierText(`${Math.min(comboCount + 1, 5)}x`)
-      }
     }
   }
 
@@ -410,6 +427,34 @@ export function GameInterface({ players, questions, timeRemaining, onAnswerSubmi
         
         .animate-stamp {
           animation: stamp 1s ease-out forwards;
+        }
+
+        @keyframes shake {
+          0% { transform: translateX(0); }
+          10% { transform: translateX(-10px); }
+          20% { transform: translateX(10px); }
+          30% { transform: translateX(-10px); }
+          40% { transform: translateX(10px); }
+          50% { transform: translateX(-10px); }
+          60% { transform: translateX(10px); }
+          70% { transform: translateX(-10px); }
+          80% { transform: translateX(10px); }
+          90% { transform: translateX(-10px); }
+          100% { transform: translateX(0); }
+        }
+
+        .animate-shake {
+          animation: shake 0.5s ease-in-out forwards;
+        }
+
+        @keyframes fadeInOut {
+          0% { opacity: 0; }
+          50% { opacity: 1; }
+          100% { opacity: 0; }
+        }
+
+        .animate-fade-in-out {
+          animation: fadeInOut 2s ease-in-out forwards;
         }
       `}</style>
     </div>
