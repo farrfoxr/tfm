@@ -1,11 +1,11 @@
 "use client"
 
-import { createContext, useContext, useState, type ReactNode } from "react"
-import type { Lobby, Player } from "./SocketContext"
+import { createContext, useContext, useState, type ReactNode, type Dispatch, type SetStateAction } from "react"
+import type { Lobby } from "./SocketContext"
 
 interface LobbyContextType {
   lobby: Lobby | null
-  setLobby: (lobby: Lobby | null) => void
+  setLobby: Dispatch<SetStateAction<Lobby | null>>
 }
 
 const LobbyContext = createContext<LobbyContextType | undefined>(undefined)

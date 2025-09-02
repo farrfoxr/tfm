@@ -11,6 +11,7 @@ import { useLobby } from "@/context/LobbyContext"
 import type { GameSettings } from "@/context/SocketContext"
 import { GameInterface } from "@/components/game-interface"
 import { Leaderboard } from "@/components/leaderboard"
+import type { Player, Lobby } from "@/context/SocketContext"
 
 export default function LobbyPage() {
   const router = useRouter()
@@ -47,6 +48,62 @@ export default function LobbyPage() {
       socket.off("lobby-updated", handleLobbyUpdated)
     }
   }, [socket, setLobby])
+
+  useEffect(() => {
+    if (!socket) return
+
+    const handleGameStarted = (gameState: any) => {
+      // Update the lobby state with the new game state
+      if (lobby) {
+        setLobby({
+          ...lobby,
+          gameState,
+          isGameActive: true,
+        })
+      }
+    }
+
+    const handleTimerUpdate = (timeRemaining: number) => {
+      if (lobby) {
+        setLobby((prev: Lobby | null) => {
+          if (!prev) return null // Handle null case
+          return {
+            ...prev,
+            gameState: {
+              ...prev.gameState,
+              timeRemaining,
+            },
+          }
+        })
+      }
+    }
+
+    const handleGameEnded = (finalScores: Player[]) => {
+      if (lobby) {
+        setLobby((prev: Lobby | null) => {
+          if (!prev) return null // Handle null case
+          return {
+            ...prev,
+            isGameActive: false,
+            gameState: {
+              ...prev.gameState,
+              isEnded: true,
+            },
+          }
+        })
+      }
+    }
+
+    socket.on("game-started", handleGameStarted)
+    socket.on("timer-update", handleTimerUpdate)
+    socket.on("game-ended", handleGameEnded)
+
+    return () => {
+      socket.off("game-started", handleGameStarted)
+      socket.off("timer-update", handleTimerUpdate)
+      socket.off("game-ended", handleGameEnded)
+    }
+  }, [socket, setLobby, lobby])
 
   useEffect(() => {
     if (!socket) return
@@ -139,7 +196,9 @@ export default function LobbyPage() {
     }
   }
 
-  const handleGameEnd = () => {}
+  const handleGameEnd = (finalScores: Player[]) => {
+    // Empty for now as requested
+  }
 
   const handleReturnToLobby = () => {
     // if (socket && lobbyCode) {
@@ -168,6 +227,7 @@ export default function LobbyPage() {
         timeRemaining={lobby.gameState.timeRemaining}
         onAnswerSubmit={handleAnswerSubmit}
         onLeaveGame={handleLeaveGame}
+        onGameEnd={handleGameEnd}
       />
     )
   }

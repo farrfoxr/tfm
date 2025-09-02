@@ -58,6 +58,7 @@ interface ServerToClientEvents {
   "game-started": (gameState: GameState) => void
   "question-updated": (question: Question, timeRemaining: number) => void
   "player-answered": (playerId: string, isCorrect: boolean, newScore: number) => void
+  "timer-update": (timeRemaining: number) => void
   "game-ended": (finalScores: Player[]) => void
   error: (message: string) => void
 }
@@ -116,6 +117,10 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
       setIsConnected(false)
     })
 
+    socketInstance.on("timer-update", (timeRemaining: number) => {
+      console.log("Timer updated:", timeRemaining)
+    })
+
     setSocket(socketInstance)
 
     return () => {
@@ -126,4 +131,4 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
   return <SocketContext.Provider value={{ socket, isConnected }}>{children}</SocketContext.Provider>
 }
 
-export type { GameSettings, Player, Question }
+export type { GameSettings, Player, Question, Lobby }

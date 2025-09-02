@@ -16,9 +16,17 @@ interface GameInterfaceProps {
   timeRemaining: number
   onAnswerSubmit: (payload: { questionId: number; answer: string }) => void
   onLeaveGame: () => void
+  onGameEnd: (finalScores: Player[]) => void
 }
 
-export function GameInterface({ players, questions, timeRemaining, onAnswerSubmit, onLeaveGame }: GameInterfaceProps) {
+export function GameInterface({
+  players,
+  questions,
+  timeRemaining,
+  onAnswerSubmit,
+  onLeaveGame,
+  onGameEnd,
+}: GameInterfaceProps) {
   const { theme } = useTheme()
   const { socket } = useSocket()
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0)
@@ -76,10 +84,11 @@ export function GameInterface({ players, questions, timeRemaining, onAnswerSubmi
 
       setTimeout(() => {
         setShowGameOver(false)
-        // Assuming onGameEnd is handled elsewhere
+        // Call onGameEnd with final scores
+        onGameEnd(players)
       }, 2000)
     }
-  }, [gameEndRequested, showGameOver])
+  }, [gameEndRequested, showGameOver, onGameEnd, players])
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
