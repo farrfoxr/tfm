@@ -59,11 +59,6 @@ export function GameInterface({
   useEffect(() => {
     setAnswer("")
     setHasSkippedQuestion(false)
-    setComboCount(0)
-    setIsComboActive(false)
-    setComboTimeRemaining(7) // Reset to 7 seconds
-    setShowMultiplier(false)
-    setMultiplierText("1x")
   }, [currentQuestion.id])
 
   useEffect(() => {
