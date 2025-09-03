@@ -220,6 +220,9 @@ export default function LobbyPage() {
   }
 
   if (lobby.isGameActive && lobby.gameState) {
+    const sortedPlayers = [...lobby.players].sort((a, b) => b.score - a.score)
+    const myRank = currentPlayer ? sortedPlayers.indexOf(currentPlayer) + 1 : undefined
+
     return (
       <GameInterface
         players={lobby.players}
@@ -228,6 +231,7 @@ export default function LobbyPage() {
         onAnswerSubmit={handleAnswerSubmit}
         onLeaveGame={handleLeaveGame}
         onGameEnd={handleGameEnd}
+        myRank={myRank}
       />
     )
   }

@@ -17,6 +17,7 @@ interface GameInterfaceProps {
   onAnswerSubmit: (payload: { questionId: number; answer: string }) => void
   onLeaveGame: () => void
   onGameEnd: (finalScores: Player[]) => void
+  myRank?: number // Added myRank prop for leaderboard display
 }
 
 export function GameInterface({
@@ -26,6 +27,7 @@ export function GameInterface({
   onAnswerSubmit,
   onLeaveGame,
   onGameEnd,
+  myRank,
 }: GameInterfaceProps) {
   const { theme } = useTheme()
   const { socket } = useSocket()
@@ -39,10 +41,12 @@ export function GameInterface({
   const [gameEndRequested, setGameEndRequested] = useState(false)
   const [comboCount, setComboCount] = useState(0)
   const [isComboActive, setIsComboActive] = useState(false)
-  const [comboTimeRemaining, setComboTimeRemaining] = useState(20)
+  const [comboTimeRemaining, setComboTimeRemaining] = useState(7) // Set to 7 seconds for combo timer
   const [hasError, setHasError] = useState(false)
   const [showMultiplier, setShowMultiplier] = useState(false)
   const [multiplierText, setMultiplierText] = useState("1x")
+
+  const comboTimerRef = useRef<NodeJS.Timeout | null>(null)
 
   const currentQuestion = questions[currentQuestionIndex]
 
@@ -57,7 +61,7 @@ export function GameInterface({
     setHasSkippedQuestion(false)
     setComboCount(0)
     setIsComboActive(false)
-    setComboTimeRemaining(20)
+    setComboTimeRemaining(7) // Reset to 7 seconds
     setShowMultiplier(false)
     setMultiplierText("1x")
   }, [currentQuestion.id])
@@ -90,14 +94,48 @@ export function GameInterface({
     }
   }, [gameEndRequested, showGameOver, onGameEnd, players])
 
+  useEffect(() => {
+    if (isComboActive) {
+      const interval = setInterval(() => {
+        setComboTimeRemaining((prevTime) => Math.max(0, prevTime - 1))
+      }, 1000)
+      return () => clearInterval(interval)
+    }
+  }, [isComboActive])
+
+  // This useEffect handles the auto-skip timer for each question
+  useEffect(() => {
+    // Don't start a timer if the game is over or there are no more questions
+    if (showGameOver || !currentQuestion) {
+      return
+    }
+
+    const timer = setTimeout(() => {
+      // Skip to the next question if the timer runs out
+      console.log(`Question ${currentQuestion.id} timed out. Skipping.`)
+      setCurrentQuestionIndex((prev) => prev + 1)
+      setComboCount(0)
+      setIsComboActive(false)
+    }, 20000) // 20 seconds
+
+    // Cleanup function to clear the timer if the player answers in time
+    return () => clearTimeout(timer)
+  }, [currentQuestion, showGameOver])
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     if (answer.trim() && !showGameOver && socket && currentQuestion) {
       const isCorrect = Number.parseInt(answer.trim()) === currentQuestion.answer
 
       if (isCorrect) {
+        if (comboTimerRef.current) {
+          clearTimeout(comboTimerRef.current)
+        }
+
         const newCombo = comboCount + 1
         setComboCount(newCombo)
+        setComboTimeRemaining(7)
+
         if (newCombo >= 2) {
           setIsComboActive(true)
           const comboLevel = Math.max(0, newCombo - 1)
@@ -106,10 +144,21 @@ export function GameInterface({
           setShowMultiplier(true)
           setTimeout(() => setShowMultiplier(false), 2000)
         }
+
+        comboTimerRef.current = setTimeout(() => {
+          setComboCount(0)
+          setIsComboActive(false)
+          setComboTimeRemaining(7)
+        }, 7000)
       } else {
+        if (comboTimerRef.current) {
+          clearTimeout(comboTimerRef.current)
+        }
+
         // Incorrect answer
         setComboCount(0)
         setIsComboActive(false)
+        setComboTimeRemaining(7) // Reset to 7 seconds
         setHasError(true)
         setTimeout(() => setHasError(false), 500) // Duration of the shake animation
       }
@@ -132,7 +181,8 @@ export function GameInterface({
     }
   }
 
-  const timerProgress = isComboActive ? (comboTimeRemaining / 10) * 100 : (comboTimeRemaining / 20) * 100
+  const timerProgress = isComboActive ? (comboTimeRemaining / 7) * 100 : 0
+
   const isTimerLow = timeRemaining <= 10
   const timerAnimationDuration = isTimerLow ? "duration-150" : "duration-500"
 
@@ -251,7 +301,7 @@ export function GameInterface({
                 </div>
               ))}
 
-              {sortedPlayers.length > 3 && currentPlayer && (
+              {myRank && myRank > 3 && currentPlayer && !topThreePlayers.find((p) => p.id === currentPlayer.id) && (
                 <div
                   className={`flex justify-between items-center mt-3 pt-2 border-t ${
                     theme === "nord"
@@ -265,7 +315,7 @@ export function GameInterface({
                         theme === "nord" ? "text-[var(--quiz-secondary)]" : "text-[var(--quiz-sakura-secondary)]"
                       }`}
                     >
-                      {sortedPlayers.indexOf(currentPlayer) + 1}.
+                      {myRank}.
                     </span>
                     <span
                       className={`text-sm font-semibold ${
