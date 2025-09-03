@@ -45,6 +45,7 @@ export function GameInterface({
   const [hasError, setHasError] = useState(false)
   const [showMultiplier, setShowMultiplier] = useState(false)
   const [multiplierText, setMultiplierText] = useState("1x")
+  const [questionTimeLeft, setQuestionTimeLeft] = useState(20) // Added state for the 20-second question timer visual countdown
 
   const comboTimerRef = useRef<NodeJS.Timeout | null>(null)
 
@@ -117,6 +118,18 @@ export function GameInterface({
     return () => clearTimeout(timer)
   }, [currentQuestion, showGameOver])
 
+  // Added useEffect for 20-second question timer visual countdown
+  useEffect(() => {
+    if (!currentQuestion) return
+
+    setQuestionTimeLeft(20) // Reset the timer for the new question
+    const interval = setInterval(() => {
+      setQuestionTimeLeft((prev) => Math.max(0, prev - 1))
+    }, 1000)
+
+    return () => clearInterval(interval)
+  }, [currentQuestion])
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     if (answer.trim() && !showGameOver && socket && currentQuestion) {
@@ -176,7 +189,8 @@ export function GameInterface({
     }
   }
 
-  const timerProgress = isComboActive ? (comboTimeRemaining / 7) * 100 : 0
+  // Updated timer progress to always use the 20-second question timer
+  const timerProgress = (questionTimeLeft / 20) * 100
 
   const isTimerLow = timeRemaining <= 10
   const timerAnimationDuration = isTimerLow ? "duration-150" : "duration-500"
