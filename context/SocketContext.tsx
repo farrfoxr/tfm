@@ -131,4 +131,4 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
   return <SocketContext.Provider value={{ socket, isConnected }}>{children}</SocketContext.Provider>
 }
 
-export type { GameSettings, Player, Question, Lobby }
+export type { GameSettings, GameState, Player, Question, Lobby }

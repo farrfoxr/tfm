@@ -1,8 +1,7 @@
 "use client"
 
 import type React from "react"
-
-import { useState, useEffect, useRef } from "react"
+import { useState, useEffect, useRef, memo } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { ArrowLeft } from "lucide-react"
@@ -20,7 +19,7 @@ interface GameInterfaceProps {
   myRank?: number // Added myRank prop for leaderboard display
 }
 
-export function GameInterface({
+export const GameInterface = memo(function GameInterface({
   players,
   questions,
   timeRemaining,
@@ -527,6 +526,4 @@ export function GameInterface({
       `}</style>
     </div>
   )
-}
-
-export default GameInterface
+})

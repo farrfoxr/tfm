@@ -11,7 +11,7 @@ import { useLobby } from "@/context/LobbyContext"
 import type { GameSettings } from "@/context/SocketContext"
 import { GameInterface } from "@/components/game-interface"
 import { Leaderboard } from "@/components/leaderboard"
-import type { Player, Lobby } from "@/context/SocketContext"
+import type { Player, Lobby, GameState } from "@/context/SocketContext"
 
 export default function LobbyPage() {
   const router = useRouter()
@@ -38,93 +38,74 @@ export default function LobbyPage() {
   useEffect(() => {
     if (!socket) return
 
-    const handleLobbyUpdated = (lobbyData: any) => {
-      setLobby(lobbyData)
+    // Handles score/player list updates without resetting the whole game
+    const handleLobbyUpdate = (updatedLobby: Lobby) => {
+      setLobby((prevLobby) => {
+        if (!prevLobby) return updatedLobby // If there's no lobby, accept the new one.
+        // Update all properties EXCEPT gameState, which is handled by other events.
+        return {
+          ...prevLobby,
+          players: updatedLobby.players,
+          settings: updatedLobby.settings,
+          host: updatedLobby.host,
+          isGameActive: updatedLobby.isGameActive,
+        }
+      })
     }
 
-    socket.on("lobby-updated", handleLobbyUpdated)
-
-    return () => {
-      socket.off("lobby-updated", handleLobbyUpdated)
-    }
-  }, [socket, setLobby])
-
-  useEffect(() => {
-    if (!socket) return
-
-    const handleGameStarted = (gameState: any) => {
-      // Update the lobby state with the new game state
-      if (lobby) {
-        setLobby({
-          ...lobby,
+    // Handles the start of the game
+    const handleGameStarted = (gameState: GameState) => {
+      setLobby((prevLobby) => {
+        if (!prevLobby) return null
+        return {
+          ...prevLobby,
           gameState,
           isGameActive: true,
-        })
-      }
+        }
+      })
     }
 
+    // Handles the main timer countdown
     const handleTimerUpdate = (timeRemaining: number) => {
-      if (lobby) {
-        setLobby((prev: Lobby | null) => {
-          if (!prev) return null // Handle null case
-          return {
-            ...prev,
-            gameState: {
-              ...prev.gameState,
-              timeRemaining,
-            },
-          }
-        })
-      }
+      setLobby((prevLobby) => {
+        if (!prevLobby) return null
+        return {
+          ...prevLobby,
+          gameState: { ...prevLobby.gameState, timeRemaining },
+        }
+      })
     }
 
+    // Handles the end of the game
     const handleGameEnded = (finalScores: Player[]) => {
-      if (lobby) {
-        setLobby((prev: Lobby | null) => {
-          if (!prev) return null // Handle null case
-          return {
-            ...prev,
-            isGameActive: false,
-            gameState: {
-              ...prev.gameState,
-              isEnded: true,
-            },
-          }
-        })
-      }
+      setLobby((prevLobby) => {
+        if (!prevLobby) return null
+        return {
+          ...prevLobby,
+          players: finalScores, // Update with final sorted scores
+          isGameActive: false,
+          gameState: {
+            ...prevLobby.gameState,
+            isEnded: true,
+          },
+        }
+      })
     }
 
+    // Register all event listeners
+    socket.on("lobby-updated", handleLobbyUpdate)
     socket.on("game-started", handleGameStarted)
     socket.on("timer-update", handleTimerUpdate)
     socket.on("game-ended", handleGameEnded)
 
+    // Cleanup function to remove all listeners
     return () => {
+      socket.off("lobby-updated", handleLobbyUpdate)
       socket.off("game-started", handleGameStarted)
       socket.off("timer-update", handleTimerUpdate)
       socket.off("game-ended", handleGameEnded)
     }
-  }, [socket, setLobby, lobby])
-
-  useEffect(() => {
-    if (!socket) return
-
-    const handleGameStarted = (gameState: any) => {
-      // Update the lobby state with the new game state
-      if (lobby) {
-        setLobby({
-          ...lobby,
-          gameState,
-          isGameActive: true,
-        })
-      }
-    }
-
-    socket.on("game-started", handleGameStarted)
-
-    return () => {
-      socket.off("game-started", handleGameStarted)
-    }
-  }, [socket, setLobby, lobby])
+  }, [socket, setLobby])
 
   const handleCopyCode = async () => {
     if (lobbyCode) {
