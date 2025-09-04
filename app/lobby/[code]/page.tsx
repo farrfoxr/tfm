@@ -127,9 +127,7 @@ export default function LobbyPage() {
   }
 
   const handleLeaveGame = () => {
-    // if (socket && lobbyCode) {
-    //   socket.emit("leave-game", { lobbyCode })
-    // }
+    handleLeaveLobby()
   }
 
   const handleReady = () => {
