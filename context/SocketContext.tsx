@@ -60,6 +60,7 @@ interface ServerToClientEvents {
   "player-answered": (playerId: string, isCorrect: boolean, newScore: number) => void
   "timer-update": (timeRemaining: number) => void
   "game-ended": (finalScores: Player[]) => void
+  "return-to-lobby": () => void
   error: (message: string) => void
 }
 
@@ -78,6 +79,7 @@ interface ClientToServerEvents {
   "start-game": () => void
   "submit-answer": (payload: { questionId: number; answer: string }) => void
   "update-settings": (settings: Partial<GameSettings>) => void
+  "return-to-lobby": () => void
 }
 
 type SocketType = Socket<ServerToClientEvents, ClientToServerEvents>
@@ -119,6 +121,10 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
 
     socketInstance.on("timer-update", (timeRemaining: number) => {
       console.log("Timer updated:", timeRemaining)
+    })
+
+    socketInstance.on("return-to-lobby", () => {
+      console.log("Returned to lobby")
     })
 
     setSocket(socketInstance)

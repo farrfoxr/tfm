@@ -42,13 +42,12 @@ export default function LobbyPage() {
     const handleLobbyUpdate = (updatedLobby: Lobby) => {
       setLobby((prevLobby) => {
         if (!prevLobby) return updatedLobby // If there's no lobby, accept the new one.
-        // Update all properties EXCEPT gameState, which is handled by other events.
+
         return {
-          ...prevLobby,
-          players: updatedLobby.players,
-          settings: updatedLobby.settings,
-          host: updatedLobby.host,
-          isGameActive: updatedLobby.isGameActive,
+          ...updatedLobby, // Take all fresh data from the server
+          gameState: prevLobby.isGameActive
+            ? prevLobby.gameState // Keep existing gameState during active games
+            : { ...prevLobby.gameState, isEnded: updatedLobby.gameState?.isEnded || false }, // Allow isEnded updates when not in active game
         }
       })
     }
@@ -182,9 +181,9 @@ export default function LobbyPage() {
   }
 
   const handleReturnToLobby = () => {
-    // if (socket && lobbyCode) {
-    //   socket.emit("reset-lobby", { lobbyCode })
-    // }
+    if (socket && isHost) {
+      socket.emit("return-to-lobby")
+    }
   }
 
   const allPlayersReady = lobby?.players?.every((player: any) => player.isReady)
@@ -197,7 +196,7 @@ export default function LobbyPage() {
   }
 
   if (lobby.gameState?.isEnded) {
-    return <Leaderboard players={lobby.players || []} onReturnToLobby={handleReturnToLobby} />
+    return <Leaderboard players={lobby.players || []} onReturnToLobby={handleReturnToLobby} isHost={isHost} />
   }
 
   if (lobby.isGameActive && lobby.gameState) {

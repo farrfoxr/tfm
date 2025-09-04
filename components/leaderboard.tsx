@@ -8,9 +8,10 @@ import type { Player } from "@/context/SocketContext"
 interface LeaderboardProps {
   players: Player[]
   onReturnToLobby: () => void
+  isHost: boolean
 }
 
-export function Leaderboard({ players, onReturnToLobby }: LeaderboardProps) {
+export function Leaderboard({ players, onReturnToLobby, isHost }: LeaderboardProps) {
   const { theme } = useTheme()
 
   const sortedPlayers = [...players].sort((a, b) => b.score - a.score).slice(0, 3)
@@ -187,15 +188,25 @@ export function Leaderboard({ players, onReturnToLobby }: LeaderboardProps) {
           {/* Return to Lobby Button */}
           <Button
             onClick={onReturnToLobby}
+            disabled={!isHost}
             size="lg"
             className={`h-14 px-8 text-lg font-semibold transition-all duration-300 ${
               theme === "nord"
                 ? "bg-[var(--quiz-accent-blue)] hover:bg-[var(--quiz-accent-blue)]/90 text-[var(--quiz-background)]"
                 : "bg-[var(--quiz-sakura-accent)] hover:bg-[var(--quiz-sakura-accent)]/90 text-white"
-            }`}
+            } ${!isHost ? "opacity-50 cursor-not-allowed" : ""}`}
           >
             Return to Lobby
           </Button>
+
+          {/* Tip text for non-host players */}
+          {!isHost && (
+            <p
+              className={`text-sm text-center mt-2 ${theme === "nord" ? "text-[var(--quiz-secondary)]" : "text-[var(--quiz-sakura-secondary)]"}`}
+            >
+              Only the host can return the party to the lobby.
+            </p>
+          )}
         </div>
       </div>
     </div>
