@@ -240,48 +240,48 @@ export default function LobbyPage() {
             >
               Game Lobby
             </h1>
-            <div className="flex items-center gap-2">
-              <span
-                className={`text-lg ${
-                  theme === "nord" ? "text-[var(--quiz-secondary)]" : "text-[var(--quiz-sakura-secondary)]"
-                }`}
-              >
-                Code:
-              </span>
-              <div
-                className={`flex items-center gap-2 px-3 py-1 rounded-lg ${
-                  theme === "nord" ? "bg-[var(--quiz-muted)]" : "bg-[var(--quiz-sakura-muted)]"
-                }`}
-              >
+            <div className="flex flex-col items-center">
+              <div className="flex items-center gap-2 mb-1">
                 <span
-                  className={`text-xl font-bold tracking-wider ${
-                    theme === "nord" ? "text-[var(--quiz-text)]" : "text-[var(--quiz-sakura-text)]"
+                  className={`text-lg ${
+                    theme === "nord" ? "text-[var(--quiz-secondary)]" : "text-[var(--quiz-sakura-secondary)]"
                   }`}
                 >
-                  {lobbyCode}
+                  Code:
                 </span>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={handleCopyCode}
-                  className={`h-8 w-8 p-0 ${
-                    theme === "nord"
-                      ? "text-[var(--quiz-secondary)] hover:text-[var(--quiz-text)] hover:bg-[var(--quiz-muted)]"
-                      : "text-[var(--quiz-sakura-secondary)] hover:text-[var(--quiz-sakura-text)] hover:bg-[var(--quiz-sakura-muted)]"
+                <div
+                  className={`flex items-center gap-2 px-3 py-1 rounded-lg ${
+                    theme === "nord" ? "bg-[var(--quiz-muted)]" : "bg-[var(--quiz-sakura-muted)]"
                   }`}
                 >
-                  <Copy className="h-4 w-4" />
-                </Button>
+                  <span
+                    className={`text-xl font-bold tracking-wider ${
+                      theme === "nord" ? "text-[var(--quiz-text)]" : "text-[var(--quiz-sakura-text)]"
+                    }`}
+                  >
+                    {lobbyCode}
+                  </span>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={handleCopyCode}
+                    className={`h-8 w-8 p-0 ${
+                      theme === "nord"
+                        ? "text-[var(--quiz-secondary)] hover:text-[var(--quiz-text)] hover:bg-[var(--quiz-muted)]"
+                        : "text-[var(--quiz-sakura-secondary)] hover:text-[var(--quiz-sakura-text)] hover:bg-[var(--quiz-sakura-muted)]"
+                    }`}
+                  >
+                    <Copy className="h-4 w-4" />
+                  </Button>
+                </div>
               </div>
-              {copied && (
-                <span
-                  className={`text-sm ${
-                    theme === "nord" ? "text-[var(--quiz-accent-yellow)]" : "text-[var(--quiz-sakura-accent)]"
-                  }`}
-                >
-                  Copied!
-                </span>
-              )}
+              <span
+                className={`text-sm transition-opacity duration-300 ease-in-out ${
+                  copied ? "opacity-100" : "opacity-0"
+                } ${theme === "nord" ? "text-[var(--quiz-accent-yellow)]" : "text-[var(--quiz-sakura-accent)]"}`}
+              >
+                Copied!
+              </span>
             </div>
           </div>
           <div className="w-24" /> {/* Spacer for centering */}
