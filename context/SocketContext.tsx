@@ -23,7 +23,7 @@ interface Question {
 interface GameSettings {
   difficulty: "easy" | "medium" | "hard"
   duration: number // This value is in seconds
-  questionCount: number
+  questionCount?: number // Make this property optional to match backend interface
   operations: {
     addition: boolean
     subtraction: boolean

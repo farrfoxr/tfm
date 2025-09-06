@@ -21,9 +21,7 @@ export default function LobbyPage() {
   const { lobby, setLobby } = useLobby()
 
   const [copied, setCopied] = useState(false)
-  // const [operations, setOperations] = useState({...})
-  // const [difficulty, setDifficulty] = useState<"easy" | "normal" | "hard">("easy")
-  // const [gameTime, setGameTime] = useState<2 | 3 | 5>(2)
+  const [isStarting, setIsStarting] = useState(false)
 
   const lobbyCode = lobby?.code
   const isHost = socket?.id === lobby?.host
@@ -101,6 +99,13 @@ export default function LobbyPage() {
     }
   }, [socket, setLobby])
 
+  useEffect(() => {
+    // Reset the 'isStarting' state when returning to the lobby
+    if (lobby && !lobby.isGameActive) {
+      setIsStarting(false)
+    }
+  }, [lobby])
+
   const handleCopyCode = async () => {
     if (lobbyCode) {
       try {
@@ -165,6 +170,7 @@ export default function LobbyPage() {
 
   const handleStartGame = () => {
     if (socket) {
+      setIsStarting(true)
       socket.emit("start-game")
     }
   }
@@ -652,7 +658,7 @@ export default function LobbyPage() {
               {currentPlayer?.isReady && (
                 <Button
                   onClick={handleStartGame}
-                  disabled={!canStartGame}
+                  disabled={!canStartGame || isStarting}
                   size="lg"
                   className={`h-16 px-12 text-xl font-bold transition-all duration-300 ${
                     canStartGame
@@ -660,9 +666,9 @@ export default function LobbyPage() {
                         ? "bg-[var(--quiz-accent-blue)] hover:bg-[var(--quiz-accent-blue)]/90 text-[var(--quiz-background)]"
                         : "bg-[var(--quiz-sakura-accent)] hover:bg-[var(--quiz-sakura-accent)]/90 text-white"
                       : "bg-gray-500 text-gray-300 cursor-not-allowed"
-                  }`}
+                  } disabled:opacity-50`}
                 >
-                  Start Game ({lobby?.players?.length ?? 0} players)
+                  {isStarting ? "Starting..." : `Start Game (${lobby?.players?.length ?? 0} players)`}
                 </Button>
               )}
             </div>
