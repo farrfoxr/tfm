@@ -199,16 +199,25 @@ export default function LobbyPage() {
   }
 
   if (lobby.gameState?.isEnded) {
-    return <Leaderboard players={lobby.players || []} onReturnToLobby={handleReturnToLobby} isHost={isHost} />
+    const playersWithYou = lobby.players.map((p) => ({
+      ...p,
+      isYou: p.id === socket?.id,
+    }))
+    return <Leaderboard players={playersWithYou || []} onReturnToLobby={handleReturnToLobby} isHost={isHost} />
   }
 
   if (lobby.isGameActive && lobby.gameState) {
-    const sortedPlayers = [...lobby.players].sort((a, b) => b.score - a.score)
-    const myRank = currentPlayer ? sortedPlayers.indexOf(currentPlayer) + 1 : undefined
+    const playersWithYou = lobby.players.map((p) => ({
+      ...p,
+      isYou: p.id === socket?.id,
+    }))
+    const sortedPlayers = [...playersWithYou].sort((a, b) => b.score - a.score)
+    const currentPlayer = playersWithYou.find((p) => p.isYou)
+    const myRank = currentPlayer ? sortedPlayers.findIndex((p) => p.id === currentPlayer.id) + 1 : undefined
 
     return (
       <GameInterface
-        players={lobby.players}
+        players={playersWithYou}
         questions={lobby.gameState.questions}
         timeRemaining={lobby.gameState.timeRemaining}
         onAnswerSubmit={handleAnswerSubmit}
