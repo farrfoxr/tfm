@@ -243,12 +243,12 @@ export const GameInterface = memo(function GameInterface({
       )}
 
       <div className="container mx-auto px-4 py-6 max-w-screen-2xl relative">
-        <div className="flex items-start justify-between mb-8">
+        <div className="flex flex-col md:flex-row items-center md:items-start justify-between mb-8 gap-8">
           <Button
             variant="ghost"
             onClick={onLeaveGame}
             disabled={showCountdown || showGameOver}
-            className={`flex items-center gap-2 text-lg ${
+            className={`w-full md:w-auto flex items-center gap-2 text-lg md:order-first ${
               theme === "nord"
                 ? "text-[var(--quiz-secondary)] hover:text-[var(--quiz-text)] hover:bg-[var(--quiz-muted)]"
                 : "text-[var(--quiz-sakura-secondary)] hover:text-[var(--quiz-sakura-text)] hover:bg-[var(--quiz-sakura-muted)]"
@@ -259,7 +259,7 @@ export const GameInterface = memo(function GameInterface({
           </Button>
 
           <div
-            className={`rounded-2xl p-4 min-w-[280px] shadow-sm`}
+            className={`w-full md:w-auto md:min-w-[280px] md:max-w-[320px] rounded-2xl p-4 shadow-sm md:order-last`}
             style={{
               backgroundColor: theme === "nord" ? "rgba(47, 53, 65, 0.4)" : "rgba(229, 221, 214, 0.4)",
             }}
@@ -353,7 +353,7 @@ export const GameInterface = memo(function GameInterface({
         </div>
         <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-8">
           <div
-            className={`relative rounded-3xl p-12 max-w-2xl w-full text-center transition-all duration-300 ${
+            className={`relative rounded-3xl p-6 md:p-12 max-w-2xl w-full text-center transition-all duration-300 ${
               hasError ? "animate-shake" : ""
             } ${
               theme === "nord"
@@ -374,7 +374,7 @@ export const GameInterface = memo(function GameInterface({
             )}
 
             <div
-              className={`text-6xl font-bold mb-8 ${
+              className={`text-5xl md:text-6xl font-bold mb-8 ${
                 theme === "nord" ? "text-[var(--quiz-text)]" : "text-[var(--quiz-sakura-text)]"
               }`}
             >
@@ -389,7 +389,7 @@ export const GameInterface = memo(function GameInterface({
                 onChange={(e) => setAnswer(e.target.value)}
                 onKeyPress={handleKeyPress}
                 placeholder="Your answer"
-                className={`text-3xl text-center h-16 rounded-2xl border-2 font-semibold ${
+                className={`text-2xl md:text-3xl text-center h-16 rounded-2xl border-2 font-semibold ${
                   theme === "nord"
                     ? "bg-[var(--quiz-background)] border-[var(--quiz-primary)] text-[var(--quiz-text)] placeholder:text-[var(--quiz-secondary)] focus:border-[var(--quiz-accent-blue)]"
                     : "bg-[var(--quiz-sakura-background)] border-[var(--quiz-sakura-secondary)] text-[var(--quiz-sakura-text)] placeholder:text-[var(--quiz-sakura-secondary)] focus:border-[var(--quiz-sakura-accent)]"
