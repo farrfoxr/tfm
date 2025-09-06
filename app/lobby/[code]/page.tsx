@@ -82,11 +82,6 @@ export default function LobbyPage() {
         return {
           ...prevLobby,
           players: finalScores, // Update with final sorted scores
-          isGameActive: false,
-          gameState: {
-            ...prevLobby.gameState,
-            isEnded: true,
-          },
         }
       })
     }
@@ -174,8 +169,18 @@ export default function LobbyPage() {
     }
   }
 
-  const handleGameEnd = (finalScores: Player[]) => {
-    // Empty for now as requested
+  const handleGameEnd = () => {
+    setLobby((prevLobby) => {
+      if (!prevLobby) return null
+      return {
+        ...prevLobby,
+        isGameActive: false,
+        gameState: {
+          ...prevLobby.gameState,
+          isEnded: true,
+        },
+      }
+    })
   }
 
   const handleReturnToLobby = () => {
