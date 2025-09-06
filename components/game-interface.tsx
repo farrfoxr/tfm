@@ -41,7 +41,7 @@ export const GameInterface = memo(function GameInterface({
   const [gameEndRequested, setGameEndRequested] = useState(false)
   const [comboCount, setComboCount] = useState(0)
   const [isComboActive, setIsComboActive] = useState(false)
-  const [comboTimeRemaining, setComboTimeRemaining] = useState(7) // Set to 7 seconds for combo timer
+  const [comboTimeRemaining, setComboTimeRemaining] = useState(10) // Set to 10 seconds for combo timer
   const [hasError, setHasError] = useState(false)
   const [showMultiplier, setShowMultiplier] = useState(false)
   const [multiplierText, setMultiplierText] = useState("1x")
@@ -144,7 +144,7 @@ export const GameInterface = memo(function GameInterface({
 
         const newCombo = comboCount + 1
         setComboCount(newCombo)
-        setComboTimeRemaining(7)
+        setComboTimeRemaining(10)
 
         if (newCombo >= 2) {
           setIsComboActive(true)
@@ -158,8 +158,8 @@ export const GameInterface = memo(function GameInterface({
         comboTimerRef.current = setTimeout(() => {
           setComboCount(0)
           setIsComboActive(false)
-          setComboTimeRemaining(7)
-        }, 7000)
+          setComboTimeRemaining(10)
+        }, 10000)
       } else {
         if (comboTimerRef.current) {
           clearTimeout(comboTimerRef.current)
@@ -168,7 +168,7 @@ export const GameInterface = memo(function GameInterface({
         // Incorrect answer
         setComboCount(0)
         setIsComboActive(false)
-        setComboTimeRemaining(7) // Reset to 7 seconds
+        setComboTimeRemaining(10) // Reset to 10 seconds
         setHasError(true)
         setTimeout(() => setHasError(false), 500) // Duration of the shake animation
       }
