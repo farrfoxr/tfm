@@ -2,7 +2,7 @@
 
 import type React from "react"
 import { useTheme } from "@/components/theme-provider" // Fixed import path to use theme-provider instead of non-existent hooks/use-theme
-import { useState } from "react"
+import { useState, useRef, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { X } from "lucide-react"
@@ -26,6 +26,15 @@ export function JoinLobbyOverlay({ isOpen, onClose, onJoin }: JoinLobbyOverlayPr
   const [lobbyCode, setLobbyCode] = useState("")
   const [error, setError] = useState("")
   const [isShaking, setIsShaking] = useState(false)
+  const inputRef = useRef<HTMLInputElement>(null)
+
+  useEffect(() => {
+    if (isOpen) {
+      setTimeout(() => {
+        inputRef.current?.focus()
+      }, 50)
+    }
+  }, [isOpen])
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value
@@ -120,6 +129,7 @@ export function JoinLobbyOverlay({ isOpen, onClose, onJoin }: JoinLobbyOverlayPr
         {/* Input */}
         <div className="mb-6">
           <Input
+            ref={inputRef}
             value={lobbyCode}
             onChange={handleInputChange}
             placeholder="ABCD"
