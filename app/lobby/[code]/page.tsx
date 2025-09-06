@@ -238,7 +238,7 @@ export default function LobbyPage() {
     <div className={`min-h-screen ${theme === "nord" ? "theme-nord" : "theme-sakura"}`}>
       <div className="container mx-auto px-4 py-6 max-w-4xl">
         {/* Header */}
-        <div className="flex items-center justify-between mb-8">
+        <div className="flex flex-col md:flex-row items-center justify-between mb-8 gap-4 md:gap-0">
           <Button
             variant="ghost"
             onClick={handleLeaveLobby}
@@ -303,7 +303,7 @@ export default function LobbyPage() {
               </span>
             </div>
           </div>
-          <div className="w-24" /> {/* Spacer for centering */}
+          <div className="w-24 hidden md:block" /> {/* Spacer for centering */}
         </div>
 
         {/* Game Settings Container */}
@@ -329,7 +329,7 @@ export default function LobbyPage() {
 
           <div className="space-y-6">
             {/* Time Setting */}
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-4 sm:gap-0">
               <span
                 className={`text-lg font-medium ${
                   theme === "nord" ? "text-[var(--quiz-text)]" : "text-[var(--quiz-sakura-text)]"
@@ -390,7 +390,7 @@ export default function LobbyPage() {
             </div>
 
             {/* Difficulty Setting */}
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-4 sm:gap-0">
               <span
                 className={`text-lg font-medium ${
                   theme === "nord" ? "text-[var(--quiz-text)]" : "text-[var(--quiz-sakura-text)]"
@@ -462,7 +462,7 @@ export default function LobbyPage() {
                 </span>
               </div>
 
-              <div className="grid grid-cols-3 gap-2 mb-2">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mb-2">
                 <Button
                   onClick={() => handleOperationToggle("addition")}
                   disabled={!isHost}
@@ -518,7 +518,7 @@ export default function LobbyPage() {
                 </Button>
               </div>
 
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 <Button
                   onClick={() => handleOperationToggle("division")}
                   disabled={!isHost}
@@ -577,7 +577,7 @@ export default function LobbyPage() {
             {lobby?.players?.map((player: any) => (
               <div
                 key={player.id}
-                className={`flex items-center justify-between p-4 rounded-xl ${
+                className={`flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 rounded-xl gap-2 sm:gap-0 ${
                   theme === "nord" ? "bg-[var(--quiz-background)]" : "bg-[var(--quiz-sakura-background)]"
                 }`}
               >
