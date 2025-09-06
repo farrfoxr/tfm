@@ -13,7 +13,7 @@ interface GameInterfaceProps {
   players: Player[]
   questions: Question[]
   timeRemaining: number
-  onAnswerSubmit: (payload: { questionId: number; answer: string }) => void
+  onAnswerSubmit: (payload: { questionId: number; answer: string; timeTaken: number }) => void
   onLeaveGame: () => void
   onGameEnd: (finalScores: Player[]) => void
   myRank?: number // Added myRank prop for leaderboard display
@@ -33,6 +33,7 @@ export const GameInterface = memo(function GameInterface({
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0)
   const [answer, setAnswer] = useState("")
   const inputRef = useRef<HTMLInputElement>(null)
+  const questionStartTimeRef = useRef<number>(Date.now()) // Added ref to track question start time
   const [showCountdown, setShowCountdown] = useState(false)
   const [countdownNumber, setCountdownNumber] = useState(5)
   const [showGameOver, setShowGameOver] = useState(false)
@@ -105,6 +106,8 @@ export const GameInterface = memo(function GameInterface({
       return
     }
 
+    questionStartTimeRef.current = Date.now() // Record when the question starts
+
     const timer = setTimeout(() => {
       // Skip to the next question if the timer runs out
       console.log(`Question ${currentQuestion.id} timed out. Skipping.`)
@@ -170,10 +173,13 @@ export const GameInterface = memo(function GameInterface({
         setTimeout(() => setHasError(false), 500) // Duration of the shake animation
       }
 
+      const timeTaken = Date.now() - questionStartTimeRef.current // Calculate time taken to answer
+
       // Send the answer to the server for official scoring
       socket.emit("submit-answer", {
         questionId: currentQuestion.id,
         answer: answer.trim(),
+        timeTaken, // Include the time taken in the payload
       })
 
       // Advance to the next question and clear the input

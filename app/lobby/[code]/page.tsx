@@ -157,7 +157,7 @@ export default function LobbyPage() {
     }
   }
 
-  const handleAnswerSubmit = (payload: { questionId: number; answer: string }) => {
+  const handleAnswerSubmit = (payload: { questionId: number; answer: string; timeTaken: number }) => {
     if (socket) {
       socket.emit("submit-answer", payload)
     }

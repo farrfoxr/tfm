@@ -77,7 +77,7 @@ interface ClientToServerEvents {
   "leave-lobby": () => void
   "toggle-ready": (callback: (response: { success: boolean; isReady?: boolean; error?: string }) => void) => void
   "start-game": () => void
-  "submit-answer": (payload: { questionId: number; answer: string }) => void
+  "submit-answer": (payload: { questionId: number; answer: string; timeTaken: number }) => void
   "update-settings": (settings: Partial<GameSettings>) => void
   "return-to-lobby": () => void
 }
