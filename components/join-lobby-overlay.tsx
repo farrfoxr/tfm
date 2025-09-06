@@ -88,7 +88,7 @@ export function JoinLobbyOverlay({ isOpen, onClose, onJoin }: JoinLobbyOverlayPr
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={handleOverlayClick}>
       <div
-        className={`relative w-full max-w-md p-8 rounded-2xl shadow-2xl ${
+        className={`relative w-full max-w-md p-6 sm:p-8 rounded-2xl shadow-2xl ${
           theme === "nord"
             ? "bg-[var(--quiz-muted)] border border-[var(--quiz-primary)]"
             : "bg-[var(--quiz-sakura-muted)] border border-[var(--quiz-sakura-secondary)]"
@@ -110,7 +110,7 @@ export function JoinLobbyOverlay({ isOpen, onClose, onJoin }: JoinLobbyOverlayPr
 
         {/* Title */}
         <h2
-          className={`text-2xl font-bold mb-6 text-center ${
+          className={`text-xl sm:text-2xl font-bold mb-6 text-center ${
             theme === "nord" ? "text-[var(--quiz-text)]" : "text-[var(--quiz-sakura-text)]"
           }`}
         >
@@ -133,7 +133,7 @@ export function JoinLobbyOverlay({ isOpen, onClose, onJoin }: JoinLobbyOverlayPr
             value={lobbyCode}
             onChange={handleInputChange}
             placeholder="ABCD"
-            className={`text-center text-2xl font-bold tracking-widest h-14 ${
+            className={`text-center text-xl sm:text-2xl font-bold tracking-widest h-14 ${
               theme === "nord"
                 ? "bg-[var(--quiz-background)] border-[var(--quiz-primary)] text-[var(--quiz-text)] placeholder:text-[var(--quiz-secondary)]"
                 : "bg-[var(--quiz-sakura-background)] border-[var(--quiz-sakura-secondary)] text-[var(--quiz-sakura-text)] placeholder:text-[var(--quiz-sakura-secondary)]"

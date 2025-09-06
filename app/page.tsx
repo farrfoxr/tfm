@@ -14,18 +14,18 @@ export default function HomePage() {
   return (
     <div className={`min-h-screen flex flex-col ${theme === "nord" ? "theme-nord" : "theme-sakura"}`}>
       {/* Settings and About Buttons */}
-      <div className="absolute top-6 left-6 flex items-center gap-2">
+      <div className="absolute top-4 left-4 flex items-center gap-2">
         <Link href="/settings">
           <Button
             variant="ghost"
             size="icon"
-            className={`h-14 w-14 rounded-full transition-all duration-300 hover:scale-110 ${
+            className={`h-12 w-12 md:h-14 md:w-14 rounded-full transition-all duration-300 hover:scale-110 ${
               theme === "nord"
                 ? "text-[var(--quiz-secondary)] hover:text-[var(--quiz-accent-yellow)] hover:bg-[var(--quiz-muted)]"
                 : "text-[var(--quiz-sakura-secondary)] hover:text-[var(--quiz-sakura-accent)] hover:bg-[var(--quiz-sakura-muted)]"
             }`}
           >
-            <Settings className="h-7 w-7" />
+            <Settings className="h-6 w-6 md:h-7 md:w-7" />
           </Button>
         </Link>
 
@@ -33,13 +33,13 @@ export default function HomePage() {
           <Button
             variant="ghost"
             size="icon"
-            className={`h-14 w-14 rounded-full transition-all duration-300 hover:scale-110 ${
+            className={`h-12 w-12 md:h-14 md:w-14 rounded-full transition-all duration-300 hover:scale-110 ${
               theme === "nord"
                 ? "text-[var(--quiz-secondary)] hover:text-[var(--quiz-accent-yellow)] hover:bg-[var(--quiz-muted)]"
                 : "text-[var(--quiz-sakura-secondary)] hover:text-[var(--quiz-sakura-accent)] hover:bg-[var(--quiz-sakura-muted)]"
             }`}
           >
-            <Info className="h-7 w-7" />
+            <Info className="h-6 w-6 md:h-7 md:w-7" />
           </Button>
         </Link>
       </div>
