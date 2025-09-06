@@ -14,18 +14,21 @@ export function LobbyButtons() {
   const { theme } = useTheme()
   const router = useRouter()
   const [showJoinOverlay, setShowJoinOverlay] = useState(false)
+  const [isCreating, setIsCreating] = useState(false)
   const { socket } = useSocket()
   const { playerName } = usePlayerName()
   const { setLobby } = useLobby()
 
   const handleCreateLobby = () => {
     if (socket && playerName) {
+      setIsCreating(true)
       socket.emit("create-lobby", playerName, (response) => {
         if (response.success && response.lobby) {
           setLobby(response.lobby)
           router.push(`/lobby/${response.lobby.code}`)
         } else {
           console.error("Failed to create lobby:", response.error)
+          setIsCreating(false)
         }
       })
     }
@@ -47,8 +50,9 @@ export function LobbyButtons() {
       <div className="flex flex-col gap-6 w-full max-w-md mx-auto">
         <Button
           onClick={handleCreateLobby}
+          disabled={isCreating}
           size="lg"
-          className={`h-16 text-lg font-semibold transition-all duration-300 transform hover:scale-105 hover:shadow-lg ${
+          className={`h-16 text-lg font-semibold transition-all duration-300 transform hover:scale-105 hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed disabled:scale-100 ${
             theme === "nord"
               ? "bg-[var(--quiz-muted)] hover:bg-[var(--quiz-primary)] text-[var(--quiz-text)] border-[var(--quiz-primary)] border-2"
               : "bg-[var(--quiz-sakura-muted)] hover:bg-[var(--quiz-sakura-accent)] text-[var(--quiz-sakura-text)] hover:text-white border-[var(--quiz-sakura-secondary)] border-2"
