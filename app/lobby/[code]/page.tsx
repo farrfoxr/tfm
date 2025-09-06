@@ -191,8 +191,7 @@ export default function LobbyPage() {
 
   const allPlayersReady = lobby?.players?.every((player: any) => player.isReady)
   const currentPlayer = lobby?.players?.find((p: any) => p.id === socket?.id)
-  const canStartGame =
-    isHost && currentPlayer?.isReady && (allPlayersReady || true) && (lobby?.players?.length ?? 0) >= 1
+  const canStartGame = isHost && currentPlayer?.isReady && allPlayersReady && (lobby?.players?.length ?? 0) >= 1
 
   if (!lobby) {
     return <div>Loading Lobby...</div>
@@ -663,9 +662,7 @@ export default function LobbyPage() {
                       : "bg-gray-500 text-gray-300 cursor-not-allowed"
                   }`}
                 >
-                  {allPlayersReady
-                    ? `Start Game (${lobby?.players?.length ?? 0} players)`
-                    : `Start Game - DEBUG MODE (${lobby?.players?.filter((p: any) => p.isReady).length ?? 0}/${lobby?.players?.length ?? 0} ready)`}
+                  Start Game ({lobby?.players?.length ?? 0} players)
                 </Button>
               )}
             </div>
