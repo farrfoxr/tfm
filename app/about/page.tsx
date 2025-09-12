@@ -125,6 +125,8 @@ export default function AboutPage() {
                   <br />
                   <br />
                   Thank you, I hope this game can be fun and useful for you all!
+                  <br />
+                  - Farrell
                 </p>
               </div>
             </div>
