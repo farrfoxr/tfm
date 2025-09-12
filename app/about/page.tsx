@@ -49,7 +49,7 @@ export default function AboutPage() {
 
       {/* Main Content */}
       <div className="max-w-full mx-auto px-4 py-6">
-        <div className="flex gap-0 w-full max-h-[75vh]">
+        <div className="flex w-full max-h-[75vh]">
           {/* Left Column - Main Content */}
           <div
             className="w-[80%] flex justify-center py-4 overflow-y-auto"
@@ -80,10 +80,10 @@ export default function AboutPage() {
               }
             `}</style>
 
-            <div className="w-full max-w-6xl px-2 pr-8 pb-8" style={{ direction: "ltr" }}>
+            <div className="w-full max-w-6xl pl-10 pr-4 pb-8" style={{ direction: "ltr" }}>
               <h1
                 className={`text-5xl font-semibold mb-6 text-left ${
-                  theme === "nord" ? "text-[var(--quiz-text)]" : "text-[var(--quiz-sakura-text)]"
+                  theme === "nord" ? "text-[var(--quiz-secondary)]" : "text-[var(--quiz-sakura-secondary)]"
                 }`}
               >
                 Hello,
@@ -131,8 +131,15 @@ export default function AboutPage() {
           </div>
 
           {/* Right Column - Social Links */}
-          <div className="w-[20%] flex items-center justify-start pl-2 min-w-0">
-            <div className="w-full max-w-[160px]">
+          <div className="w-[20%] flex items-center justify-center relative ml-4 hidden md:flex">
+            <div
+              className="absolute left-0 top-1/2 transform -translate-y-1/2 w-px h-16"
+              style={{
+                backgroundColor: theme === "nord" ? "var(--quiz-text)" : "var(--quiz-sakura-text)",
+              }}
+            />
+
+            <div className="w-full max-w-[140px]">
               <h2
                 className={`text-xl font-bold mb-6 text-left ${
                   theme === "nord" ? "text-[var(--quiz-text)]" : "text-[var(--quiz-sakura-text)]"
@@ -141,7 +148,7 @@ export default function AboutPage() {
                 My links
               </h2>
 
-              <div className="flex flex-col gap-4 items-start">
+              <div className="flex flex-col gap-2 items-start">
                 <a
                   href={SOCIAL_LINKS.website}
                   className={`flex items-center gap-2 text-base sm:text-lg transition-colors duration-300 truncate w-full ${
@@ -190,6 +197,67 @@ export default function AboutPage() {
                   <span className="truncate">LinkedIn</span>
                 </a>
               </div>
+            </div>
+          </div>
+
+          {/* Mobile Links Section */}
+          <div className="md:hidden mt-8 px-4">
+            <h2
+              className={`text-xl font-bold mb-6 text-center ${
+                theme === "nord" ? "text-[var(--quiz-text)]" : "text-[var(--quiz-sakura-text)]"
+              }`}
+            >
+              My links
+            </h2>
+
+            <div className="flex flex-col gap-4 items-center max-w-xs mx-auto">
+              <a
+                href={SOCIAL_LINKS.website}
+                className={`flex items-center gap-2 text-base transition-colors duration-300 truncate w-full ${
+                  theme === "nord"
+                    ? "text-[var(--quiz-secondary)] hover:text-[var(--quiz-accent-yellow)]"
+                    : "text-[var(--quiz-sakura-secondary)] hover:text-[var(--quiz-sakura-accent)]"
+                }`}
+              >
+                <Globe className="h-4 w-4 flex-shrink-0" />
+                <span className="truncate">Website</span>
+              </a>
+
+              <a
+                href={SOCIAL_LINKS.github}
+                className={`flex items-center gap-2 text-base transition-colors duration-300 truncate w-full ${
+                  theme === "nord"
+                    ? "text-[var(--quiz-secondary)] hover:text-[var(--quiz-accent-yellow)]"
+                    : "text-[var(--quiz-sakura-secondary)] hover:text-[var(--quiz-sakura-accent)]"
+                }`}
+              >
+                <Github className="h-4 w-4 flex-shrink-0" />
+                <span className="truncate">GitHub</span>
+              </a>
+
+              <a
+                href={SOCIAL_LINKS.instagram}
+                className={`flex items-center gap-2 text-base transition-colors duration-300 truncate w-full ${
+                  theme === "nord"
+                    ? "text-[var(--quiz-secondary)] hover:text-[var(--quiz-accent-yellow)]"
+                    : "text-[var(--quiz-sakura-secondary)] hover:text-[var(--quiz-sakura-accent)]"
+                }`}
+              >
+                <Instagram className="h-4 w-4 flex-shrink-0" />
+                <span className="truncate">Instagram</span>
+              </a>
+
+              <a
+                href={SOCIAL_LINKS.linkedin}
+                className={`flex items-center gap-2 text-base transition-colors duration-300 truncate w-full ${
+                  theme === "nord"
+                    ? "text-[var(--quiz-secondary)] hover:text-[var(--quiz-accent-yellow)]"
+                    : "text-[var(--quiz-sakura-secondary)] hover:text-[var(--quiz-sakura-accent)]"
+                }`}
+              >
+                <Linkedin className="h-4 w-4 flex-shrink-0" />
+                <span className="truncate">LinkedIn</span>
+              </a>
             </div>
           </div>
         </div>
