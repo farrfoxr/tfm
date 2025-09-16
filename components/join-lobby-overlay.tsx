@@ -1,12 +1,15 @@
 "use client"
 
 import type React from "react"
-
-import { useState } from "react"
+import { useTheme } from "@/components/theme-provider" // Fixed import path to use theme-provider instead of non-existent hooks/use-theme
+import { useState, useRef, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { X } from "lucide-react"
-import { useTheme } from "./theme-provider"
+import useSocket from "@/hooks/use-socket"
+import { useRouter } from "next/navigation"
+import { usePlayerName } from "@/hooks/use-player-name"
+import { useLobby } from "@/context/LobbyContext"
 
 interface JoinLobbyOverlayProps {
   isOpen: boolean
@@ -16,9 +19,22 @@ interface JoinLobbyOverlayProps {
 
 export function JoinLobbyOverlay({ isOpen, onClose, onJoin }: JoinLobbyOverlayProps) {
   const { theme } = useTheme()
+  const { socket } = useSocket()
+  const router = useRouter()
+  const { playerName } = usePlayerName()
+  const { setLobby } = useLobby()
   const [lobbyCode, setLobbyCode] = useState("")
   const [error, setError] = useState("")
   const [isShaking, setIsShaking] = useState(false)
+  const inputRef = useRef<HTMLInputElement>(null)
+
+  useEffect(() => {
+    if (isOpen) {
+      setTimeout(() => {
+        inputRef.current?.focus()
+      }, 50)
+    }
+  }, [isOpen])
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value
@@ -38,14 +54,21 @@ export function JoinLobbyOverlay({ isOpen, onClose, onJoin }: JoinLobbyOverlayPr
       return
     }
 
-    // TODO: For real websocket implementation, replace this with actual websocket
-    // lobby existence check before routing. Remove this mock validation.
-    if (lobbyCode === "TEST") {
-      showError("Lobby not found")
+    if (!socket) {
+      showError("Connection error. Please try again.")
       return
     }
 
-    onJoin(lobbyCode)
+    socket.emit("join-lobby", lobbyCode, playerName, (response: any) => {
+      if (response.success) {
+        setLobby(response.lobby)
+        router.push(`/lobby/${lobbyCode}`)
+        onClose()
+      } else {
+        console.error(response.error)
+        showError(response.error || "Failed to join lobby")
+      }
+    })
   }
 
   const showError = (message: string) => {
@@ -65,7 +88,7 @@ export function JoinLobbyOverlay({ isOpen, onClose, onJoin }: JoinLobbyOverlayPr
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={handleOverlayClick}>
       <div
-        className={`relative w-full max-w-md p-8 rounded-2xl shadow-2xl ${
+        className={`relative w-full max-w-md p-6 sm:p-8 rounded-2xl shadow-2xl ${
           theme === "nord"
             ? "bg-[var(--quiz-muted)] border border-[var(--quiz-primary)]"
             : "bg-[var(--quiz-sakura-muted)] border border-[var(--quiz-sakura-secondary)]"
@@ -87,7 +110,7 @@ export function JoinLobbyOverlay({ isOpen, onClose, onJoin }: JoinLobbyOverlayPr
 
         {/* Title */}
         <h2
-          className={`text-2xl font-bold mb-6 text-center ${
+          className={`text-xl sm:text-2xl font-bold mb-6 text-center ${
             theme === "nord" ? "text-[var(--quiz-text)]" : "text-[var(--quiz-sakura-text)]"
           }`}
         >
@@ -106,10 +129,11 @@ export function JoinLobbyOverlay({ isOpen, onClose, onJoin }: JoinLobbyOverlayPr
         {/* Input */}
         <div className="mb-6">
           <Input
+            ref={inputRef}
             value={lobbyCode}
             onChange={handleInputChange}
             placeholder="ABCD"
-            className={`text-center text-2xl font-bold tracking-widest h-14 ${
+            className={`text-center text-xl sm:text-2xl font-bold tracking-widest h-14 ${
               theme === "nord"
                 ? "bg-[var(--quiz-background)] border-[var(--quiz-primary)] text-[var(--quiz-text)] placeholder:text-[var(--quiz-secondary)]"
                 : "bg-[var(--quiz-sakura-background)] border-[var(--quiz-sakura-secondary)] text-[var(--quiz-sakura-text)] placeholder:text-[var(--quiz-sakura-secondary)]"

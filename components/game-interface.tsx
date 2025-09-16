@@ -1,68 +1,55 @@
 "use client"
 
 import type React from "react"
-
-import { useState, useEffect, useRef } from "react"
+import { useState, useEffect, useRef, memo } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { ArrowLeft } from "lucide-react"
 import { useTheme } from "@/components/theme-provider"
-
-interface Player {
-  id: number
-  name: string
-  score: number
-  isYou: boolean
-}
-
-interface Question {
-  id: number
-  equation: string
-  answer: number
-  operation: string
-}
+import type { Player, Question } from "@/context/SocketContext"
+import { useSocket } from "@/context/SocketContext"
 
 interface GameInterfaceProps {
   players: Player[]
-  currentQuestion: Question
+  questions: Question[]
   timeRemaining: number
-  comboCount: number
-  isComboActive: boolean
-  comboTimeRemaining: number
-  showMultiplier: boolean
-  multiplierText: string
-  hasError: boolean
-  myRank?: number
-  onAnswerSubmit: (answer: string) => void
+  onAnswerSubmit: (payload: { questionId: number; answer: string; timeTaken: number }) => void
   onLeaveGame: () => void
-  onGameEnd?: () => void
-  onNextQuestion?: () => void
+  onGameEnd: (finalScores: Player[]) => void
+  myRank?: number // Added myRank prop for leaderboard display
 }
 
-export default function GameInterface({
+export const GameInterface = memo(function GameInterface({
   players,
-  currentQuestion,
+  questions,
   timeRemaining,
-  comboCount,
-  isComboActive,
-  comboTimeRemaining,
-  showMultiplier,
-  multiplierText,
-  hasError,
-  myRank,
   onAnswerSubmit,
   onLeaveGame,
   onGameEnd,
-  onNextQuestion,
+  myRank,
 }: GameInterfaceProps) {
   const { theme } = useTheme()
+  const { socket } = useSocket()
+  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0)
   const [answer, setAnswer] = useState("")
   const inputRef = useRef<HTMLInputElement>(null)
+  const questionStartTimeRef = useRef<number>(Date.now()) // Added ref to track question start time
   const [showCountdown, setShowCountdown] = useState(false)
   const [countdownNumber, setCountdownNumber] = useState(5)
   const [showGameOver, setShowGameOver] = useState(false)
   const [hasSkippedQuestion, setHasSkippedQuestion] = useState(false)
   const [gameEndRequested, setGameEndRequested] = useState(false)
+  const [comboCount, setComboCount] = useState(0)
+  const [isComboActive, setIsComboActive] = useState(false)
+  const [comboTimeRemaining, setComboTimeRemaining] = useState(10) // Set to 10 seconds for combo timer
+  const [hasError, setHasError] = useState(false)
+  const [showMultiplier, setShowMultiplier] = useState(false)
+  const [multiplierText, setMultiplierText] = useState("1x")
+  const [questionTimeLeft, setQuestionTimeLeft] = useState(20) // Added state for the 20-second question timer visual countdown
+
+  const comboTimerRef = useRef<NodeJS.Timeout | null>(null)
+
+  const currentQuestion = questions[currentQuestionIndex]
 
   useEffect(() => {
     if (inputRef.current && !showCountdown && !showGameOver) {
@@ -97,16 +84,106 @@ export default function GameInterface({
 
       setTimeout(() => {
         setShowGameOver(false)
-        onGameEnd?.()
+        // Call onGameEnd with final scores
+        onGameEnd(players)
       }, 2000)
     }
-  }, [gameEndRequested, showGameOver, onGameEnd])
+  }, [gameEndRequested, showGameOver, onGameEnd, players])
+
+  useEffect(() => {
+    if (isComboActive) {
+      const interval = setInterval(() => {
+        setComboTimeRemaining((prevTime) => Math.max(0, prevTime - 1))
+      }, 1000)
+      return () => clearInterval(interval)
+    }
+  }, [isComboActive])
+
+  // This useEffect handles the auto-skip timer for each question
+  useEffect(() => {
+    // Don't start a timer if the game is over or there are no more questions
+    if (showGameOver || !currentQuestion) {
+      return
+    }
+
+    questionStartTimeRef.current = Date.now() // Record when the question starts
+
+    const timer = setTimeout(() => {
+      // Skip to the next question if the timer runs out
+      console.log(`Question ${currentQuestion.id} timed out. Skipping.`)
+      setCurrentQuestionIndex((prev) => prev + 1)
+      setComboCount(0)
+      setIsComboActive(false)
+    }, 20000) // 20 seconds
+
+    // Cleanup function to clear the timer if the player answers in time
+    return () => clearTimeout(timer)
+  }, [currentQuestion, showGameOver])
+
+  // Added useEffect for 20-second question timer visual countdown
+  useEffect(() => {
+    if (!currentQuestion) return
+
+    setQuestionTimeLeft(20) // Reset the timer for the new question
+    const interval = setInterval(() => {
+      setQuestionTimeLeft((prev) => Math.max(0, prev - 1))
+    }, 1000)
+
+    return () => clearInterval(interval)
+  }, [currentQuestion])
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    if (answer.trim() && !showGameOver) {
+    if (answer.trim() && !showGameOver && socket && currentQuestion) {
       const isCorrect = Number.parseInt(answer.trim()) === currentQuestion.answer
-      onAnswerSubmit(answer.trim())
+
+      if (isCorrect) {
+        if (comboTimerRef.current) {
+          clearTimeout(comboTimerRef.current)
+        }
+
+        const newCombo = comboCount + 1
+        setComboCount(newCombo)
+        setComboTimeRemaining(10)
+
+        if (newCombo >= 2) {
+          setIsComboActive(true)
+          const comboLevel = Math.max(0, newCombo - 1)
+          const multiplier = Math.min(1.0 + comboLevel * 0.05, 2.0)
+          setMultiplierText(`${multiplier.toFixed(2)}x`)
+          setShowMultiplier(true)
+          setTimeout(() => setShowMultiplier(false), 2000)
+        }
+
+        comboTimerRef.current = setTimeout(() => {
+          setComboCount(0)
+          setIsComboActive(false)
+          setComboTimeRemaining(10)
+        }, 10000)
+      } else {
+        if (comboTimerRef.current) {
+          clearTimeout(comboTimerRef.current)
+        }
+
+        // Incorrect answer
+        setComboCount(0)
+        setIsComboActive(false)
+        setComboTimeRemaining(10) // Reset to 10 seconds
+        setHasError(true)
+        setTimeout(() => setHasError(false), 500) // Duration of the shake animation
+      }
+
+      const timeTaken = Date.now() - questionStartTimeRef.current // Calculate time taken to answer
+
+      // Send the answer to the server for official scoring
+      socket.emit("submit-answer", {
+        questionId: currentQuestion.id,
+        answer: answer.trim(),
+        timeTaken, // Include the time taken in the payload
+      })
+
+      // Advance to the next question and clear the input
+      setCurrentQuestionIndex((prevIndex) => prevIndex + 1)
       setAnswer("")
     }
   }
@@ -117,7 +194,9 @@ export default function GameInterface({
     }
   }
 
-  const timerProgress = isComboActive ? (comboTimeRemaining / 10) * 100 : (comboTimeRemaining / 20) * 100
+  // Updated timer progress to always use the 20-second question timer
+  const timerProgress = (questionTimeLeft / 20) * 100
+
   const isTimerLow = timeRemaining <= 10
   const timerAnimationDuration = isTimerLow ? "duration-150" : "duration-500"
 
@@ -164,12 +243,12 @@ export default function GameInterface({
       )}
 
       <div className="container mx-auto px-4 py-6 max-w-screen-2xl relative">
-        <div className="flex items-start justify-between mb-8">
+        <div className="flex flex-col md:flex-row items-center md:items-start justify-between mb-8 gap-8">
           <Button
             variant="ghost"
             onClick={onLeaveGame}
             disabled={showCountdown || showGameOver}
-            className={`flex items-center gap-2 text-lg ${
+            className={`w-full md:w-auto flex items-center gap-2 text-lg md:order-first ${
               theme === "nord"
                 ? "text-[var(--quiz-secondary)] hover:text-[var(--quiz-text)] hover:bg-[var(--quiz-muted)]"
                 : "text-[var(--quiz-sakura-secondary)] hover:text-[var(--quiz-sakura-text)] hover:bg-[var(--quiz-sakura-muted)]"
@@ -180,7 +259,7 @@ export default function GameInterface({
           </Button>
 
           <div
-            className={`rounded-2xl p-4 min-w-[280px] shadow-sm`} // reduced shadow from shadow-lg to shadow-sm
+            className={`w-full md:w-auto md:min-w-[280px] md:max-w-[320px] rounded-2xl p-4 shadow-sm md:order-last`}
             style={{
               backgroundColor: theme === "nord" ? "rgba(47, 53, 65, 0.4)" : "rgba(229, 221, 214, 0.4)",
             }}
@@ -236,7 +315,7 @@ export default function GameInterface({
                 </div>
               ))}
 
-              {myRank && myRank > 3 && currentPlayer && (
+              {myRank && myRank > 3 && currentPlayer && !topThreePlayers.find((p) => p.id === currentPlayer.id) && (
                 <div
                   className={`flex justify-between items-center mt-3 pt-2 border-t ${
                     theme === "nord"
@@ -274,7 +353,7 @@ export default function GameInterface({
         </div>
         <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-8">
           <div
-            className={`relative rounded-3xl p-12 max-w-2xl w-full text-center transition-all duration-300 ${
+            className={`relative rounded-3xl p-6 md:p-12 max-w-2xl w-full text-center transition-all duration-300 ${
               hasError ? "animate-shake" : ""
             } ${
               theme === "nord"
@@ -295,7 +374,7 @@ export default function GameInterface({
             )}
 
             <div
-              className={`text-6xl font-bold mb-8 ${
+              className={`text-5xl md:text-6xl font-bold mb-8 ${
                 theme === "nord" ? "text-[var(--quiz-text)]" : "text-[var(--quiz-sakura-text)]"
               }`}
             >
@@ -310,7 +389,7 @@ export default function GameInterface({
                 onChange={(e) => setAnswer(e.target.value)}
                 onKeyPress={handleKeyPress}
                 placeholder="Your answer"
-                className={`text-3xl text-center h-16 rounded-2xl border-2 font-semibold ${
+                className={`text-2xl md:text-3xl text-center h-16 rounded-2xl border-2 font-semibold ${
                   theme === "nord"
                     ? "bg-[var(--quiz-background)] border-[var(--quiz-primary)] text-[var(--quiz-text)] placeholder:text-[var(--quiz-secondary)] focus:border-[var(--quiz-accent-blue)]"
                     : "bg-[var(--quiz-sakura-background)] border-[var(--quiz-sakura-secondary)] text-[var(--quiz-sakura-text)] placeholder:text-[var(--quiz-sakura-secondary)] focus:border-[var(--quiz-sakura-accent)]"
@@ -422,7 +501,35 @@ export default function GameInterface({
         .animate-stamp {
           animation: stamp 1s ease-out forwards;
         }
+
+        @keyframes shake {
+          0% { transform: translateX(0); }
+          10% { transform: translateX(-10px); }
+          20% { transform: translateX(10px); }
+          30% { transform: translateX(-10px); }
+          40% { transform: translateX(10px); }
+          50% { transform: translateX(-10px); }
+          60% { transform: translateX(10px); }
+          70% { transform: translateX(-10px); }
+          80% { transform: translateX(10px); }
+          90% { transform: translateX(-10px); }
+          100% { transform: translateX(0); }
+        }
+
+        .animate-shake {
+          animation: shake 0.5s ease-in-out forwards;
+        }
+
+        @keyframes fadeInOut {
+          0% { opacity: 0; }
+          50% { opacity: 1; }
+          100% { opacity: 0; }
+        }
+
+        .animate-fade-in-out {
+          animation: fadeInOut 2s ease-in-out forwards;
+        }
       `}</style>
     </div>
   )
-}
+})
