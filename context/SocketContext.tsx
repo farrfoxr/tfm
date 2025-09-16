@@ -107,7 +107,8 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
   const [isConnected, setIsConnected] = useState(false)
 
   useEffect(() => {
-    const socketInstance = io("http://localhost:3001") as SocketType
+    const socketUrl = process.env.NEXT_PUBLIC_SOCKET_SERVER_URL || "http://localhost:3001";
+    const socketInstance = io(socketUrl) as SocketType
 
     socketInstance.on("connect", () => {
       console.log("Connected to server")
