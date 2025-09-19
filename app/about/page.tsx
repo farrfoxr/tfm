@@ -6,10 +6,10 @@ import { Button } from "@/components/ui/button"
 import { useTheme } from "@/components/theme-provider"
 
 const SOCIAL_LINKS = {
-  website: "#", // Replace with your website URL
-  github: "#", // Replace with your GitHub URL
-  instagram: "#", // Replace with your Instagram URL
-  linkedin: "#", // Replace with your LinkedIn URL
+  website: "https://farrellsuryadi.vercel.app/", // Replace with your website URL
+  github: "https://github.com/farrfoxr", // Replace with your GitHub URL
+  instagram: "https://www.instagram.com/farr_ll/", // Replace with your Instagram URL
+  linkedin: "https://www.linkedin.com/in/farrellsuryadi/", // Replace with your LinkedIn URL
 }
 
 export default function AboutPage() {
@@ -49,10 +49,10 @@ export default function AboutPage() {
 
       {/* Main Content */}
       <div className="max-w-full mx-auto px-4 py-6">
-        <div className="flex w-full max-h-[75vh]">
+        <div className="flex flex-col md:flex-row w-full md:max-h-[75vh]">
           {/* Left Column - Main Content */}
           <div
-            className="w-[80%] flex justify-center py-4 overflow-y-auto"
+            className="w-full md:w-[80%] justify-center py-4 overflow-y-auto"
             style={{
               scrollbarWidth: "thin",
               scrollbarColor:
@@ -82,7 +82,7 @@ export default function AboutPage() {
 
             <div className="w-full max-w-6xl pl-10 pr-4 pb-8" style={{ direction: "ltr" }}>
               <h1
-                className={`text-5xl font-semibold mb-6 text-left ${
+                className={`text-4xl md:text-5xl font-semibold mb-6 text-left ${
                   theme === "nord" ? "text-[var(--quiz-secondary)]" : "text-[var(--quiz-sakura-secondary)]"
                 }`}
               >
@@ -91,7 +91,7 @@ export default function AboutPage() {
 
               <div className="text-left w-full">
                 <p
-                  className={`text-lg leading-relaxed text-justify ${
+                  className={`text-base md:text-lg leading-relaxed text-justify ${
                     theme === "nord" ? "text-[var(--quiz-secondary)]" : "text-[var(--quiz-sakura-secondary)]"
                   }`}
                 >
@@ -153,7 +153,7 @@ export default function AboutPage() {
               <div className="flex flex-col gap-2 items-start">
                 <a
                   href={SOCIAL_LINKS.website}
-                  className={`flex items-center gap-2 text-base sm:text-lg transition-colors duration-300 truncate w-full ${
+                  className={`flex items-center gap-2 text-base sm:text-lg transition-colors duration-300 truncate ${
                     theme === "nord"
                       ? "text-[var(--quiz-secondary)] hover:text-[var(--quiz-accent-yellow)]"
                       : "text-[var(--quiz-sakura-secondary)] hover:text-[var(--quiz-sakura-accent)]"
@@ -165,7 +165,7 @@ export default function AboutPage() {
 
                 <a
                   href={SOCIAL_LINKS.github}
-                  className={`flex items-center gap-2 text-base sm:text-lg transition-colors duration-300 truncate w-full ${
+                  className={`flex items-center gap-2 text-base sm:text-lg transition-colors duration-300 truncate ${
                     theme === "nord"
                       ? "text-[var(--quiz-secondary)] hover:text-[var(--quiz-accent-yellow)]"
                       : "text-[var(--quiz-sakura-secondary)] hover:text-[var(--quiz-sakura-accent)]"
@@ -177,7 +177,7 @@ export default function AboutPage() {
 
                 <a
                   href={SOCIAL_LINKS.instagram}
-                  className={`flex items-center gap-2 text-base sm:text-lg transition-colors duration-300 truncate w-full ${
+                  className={`flex items-center gap-2 text-base sm:text-lg transition-colors duration-300 truncate ${
                     theme === "nord"
                       ? "text-[var(--quiz-secondary)] hover:text-[var(--quiz-accent-yellow)]"
                       : "text-[var(--quiz-sakura-secondary)] hover:text-[var(--quiz-sakura-accent)]"
@@ -189,7 +189,7 @@ export default function AboutPage() {
 
                 <a
                   href={SOCIAL_LINKS.linkedin}
-                  className={`flex items-center gap-2 text-base sm:text-lg transition-colors duration-300 truncate w-full ${
+                  className={`flex items-center gap-2 text-base sm:text-lg transition-colors duration-300 truncate ${
                     theme === "nord"
                       ? "text-[var(--quiz-secondary)] hover:text-[var(--quiz-accent-yellow)]"
                       : "text-[var(--quiz-sakura-secondary)] hover:text-[var(--quiz-sakura-accent)]"
@@ -212,7 +212,7 @@ export default function AboutPage() {
               My links
             </h2>
 
-            <div className="flex flex-col gap-4 items-center max-w-xs mx-auto">
+            <div className="grid grid-cols-2 gap-4 max-w-xs mx-auto place-items-center">
               <a
                 href={SOCIAL_LINKS.website}
                 className={`flex items-center gap-2 text-base transition-colors duration-300 truncate w-full ${
