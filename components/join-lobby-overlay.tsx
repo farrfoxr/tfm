@@ -26,6 +26,7 @@ export function JoinLobbyOverlay({ isOpen, onClose, onJoin }: JoinLobbyOverlayPr
   const [lobbyCode, setLobbyCode] = useState("")
   const [error, setError] = useState("")
   const [isShaking, setIsShaking] = useState(false)
+  const [isJoining, setIsJoining] = useState(false) // <-- ADD THIS LINE
   const inputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
@@ -59,14 +60,17 @@ export function JoinLobbyOverlay({ isOpen, onClose, onJoin }: JoinLobbyOverlayPr
       return
     }
 
+    setIsJoining(true); // Disable button on click
     socket.emit("join-lobby", lobbyCode, playerName, (response: any) => {
       if (response.success) {
         setLobby(response.lobby)
         router.push(`/lobby/${lobbyCode}`)
         onClose()
+        // No need to reset isJoining, we are navigating away
       } else {
         console.error(response.error)
         showError(response.error || "Failed to join lobby")
+        setIsJoining(false); // Re-enable button on failure
       }
     })
   }
@@ -165,7 +169,7 @@ export function JoinLobbyOverlay({ isOpen, onClose, onJoin }: JoinLobbyOverlayPr
               : "bg-[var(--quiz-sakura-accent)] hover:bg-[var(--quiz-sakura-accent)]/90 text-white disabled:bg-[var(--quiz-sakura-secondary)] disabled:text-[var(--quiz-sakura-background)]"
           }`}
         >
-          Join Lobby
+          {isJoining ? "Joining..." : "Join Lobby"}
         </Button>
       </div>
     </div>
