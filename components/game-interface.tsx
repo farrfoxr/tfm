@@ -384,7 +384,8 @@ export const GameInterface = memo(function GameInterface({
             <form onSubmit={handleSubmit} className="space-y-6">
               <Input
                 ref={inputRef}
-                type="text"
+                type="tel"
+                inputMode="numeric"
                 value={answer}
                 onChange={(e) => setAnswer(e.target.value)}
                 onKeyPress={handleKeyPress}
