@@ -225,22 +225,22 @@ export const GameInterface = memo(function GameInterface({
         </div>
       )}
 
-      {showGameOver && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center">
-          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
-          <div
-            className={`text-8xl font-black animate-stamp relative z-10 ${
-              theme === "nord" ? "text-[var(--quiz-accent-blue)]" : "text-[var(--quiz-sakura-accent)]"
-            }`}
-            style={{
-              textShadow: "6px 6px 12px rgba(0,0,0,0.5), 0 0 30px rgba(255,255,255,0.3)",
-              filter: "drop-shadow(0 0 15px rgba(0,0,0,0.7))",
-            }}
-          >
-            GAME OVER
-          </div>
+    {showGameOver && (
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
+        <div
+          className={`text-6xl md:text-8xl font-black animate-stamp relative z-10 text-center ${
+            theme === "nord" ? "text-[var(--quiz-accent-blue)]" : "text-[var(--quiz-sakura-accent)]"
+          }`}
+          style={{
+            textShadow: "6px 6px 12px rgba(0,0,0,0.5), 0 0 30px rgba(255,255,255,0.3)",
+            filter: "drop-shadow(0 0 15px rgba(0,0,0,0.7))",
+          }}
+        >
+          GAME OVER
         </div>
-      )}
+      </div>
+    )}
 
       <div className="container mx-auto px-4 py-6 max-w-screen-2xl relative">
         <div className="flex flex-col md:flex-row items-center md:items-start justify-between mb-8 gap-8">
