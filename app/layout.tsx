@@ -6,6 +6,7 @@ import { ThemeProvider } from "@/components/theme-provider"
 import { SocketProvider } from "@/context/SocketContext"
 import { LobbyProvider } from "@/context/LobbyContext"
 import { SpeedInsights } from "@vercel/speed-insights/next"
+import { Analytics } from '@vercel/analytics/next';
 
 const poppins = Poppins({
   subsets: ["latin"],
@@ -33,6 +34,7 @@ export default function RootLayout({
             <LobbyProvider>{children}</LobbyProvider>
           </SocketProvider>
         </ThemeProvider>
+      <Analytics />
       <SpeedInsights />
       </body>
     </html>
