@@ -152,6 +152,8 @@ export default function AboutPage() {
 
               <div className="flex flex-col gap-2 items-start">
                 <a
+                  target="_blank"
+                  rel="noopener noreferrer"
                   href={SOCIAL_LINKS.website}
                   className={`flex items-center gap-2 text-base sm:text-lg transition-colors duration-300 truncate ${
                     theme === "nord"
@@ -164,6 +166,8 @@ export default function AboutPage() {
                 </a>
 
                 <a
+                  target="_blank"
+                  rel="noopener noreferrer"
                   href={SOCIAL_LINKS.github}
                   className={`flex items-center gap-2 text-base sm:text-lg transition-colors duration-300 truncate ${
                     theme === "nord"
@@ -176,6 +180,8 @@ export default function AboutPage() {
                 </a>
 
                 <a
+                  target="_blank"
+                  rel="noopener noreferrer"
                   href={SOCIAL_LINKS.instagram}
                   className={`flex items-center gap-2 text-base sm:text-lg transition-colors duration-300 truncate ${
                     theme === "nord"
@@ -188,6 +194,8 @@ export default function AboutPage() {
                 </a>
 
                 <a
+                  target="_blank"
+                  rel="noopener noreferrer"
                   href={SOCIAL_LINKS.linkedin}
                   className={`flex items-center gap-2 text-base sm:text-lg transition-colors duration-300 truncate ${
                     theme === "nord"
