@@ -52,15 +52,17 @@ export const GameInterface = memo(function GameInterface({
   const currentQuestion = questions[currentQuestionIndex]
 
   useEffect(() => {
-    if (inputRef.current && !showCountdown && !showGameOver) {
+    if (currentQuestion && inputRef.current && !showCountdown && !showGameOver) {
       inputRef.current.focus()
     }
-  }, [currentQuestion.id, showCountdown, showGameOver])
+  }, [currentQuestion, showCountdown, showGameOver]) // Also, change dependency to currentQuestion
 
   useEffect(() => {
-    setAnswer("")
-    setHasSkippedQuestion(false)
-  }, [currentQuestion.id])
+    if (currentQuestion) {
+      setAnswer("")
+      setHasSkippedQuestion(false)
+    }
+  }, [currentQuestion]) // Change dependency to currentQuestion
 
   useEffect(() => {
     if (timeRemaining <= 5 && timeRemaining > 0 && !showCountdown) {
@@ -361,56 +363,79 @@ export const GameInterface = memo(function GameInterface({
                 : "bg-[var(--quiz-sakura-muted)] border border-[var(--quiz-sakura-secondary)]"
             }`}
           >
-            {showMultiplier && (
-              <div
-                className={`absolute -top-4 -right-4 px-4 py-2 rounded-full text-2xl font-bold animate-fade-in-out ${
-                  theme === "nord"
-                    ? "bg-[var(--quiz-accent-yellow)] text-[var(--quiz-background)]"
-                    : "bg-[var(--quiz-sakura-accent)] text-white"
-                }`}
-              >
-                {multiplierText}
+            {currentQuestion ? (
+              // If a question exists, show the normal game UI
+              <>
+                {showMultiplier && (
+                  <div
+                    className={`absolute -top-4 -right-4 px-4 py-2 rounded-full text-2xl font-bold animate-fade-in-out ${
+                      theme === "nord"
+                        ? "bg-[var(--quiz-accent-yellow)] text-[var(--quiz-background)]"
+                        : "bg-[var(--quiz-sakura-accent)] text-white"
+                    }`}
+                  >
+                    {multiplierText}
+                  </div>
+                )}
+
+                <div
+                  className={`text-5xl md:text-6xl font-bold mb-8 ${
+                    theme === "nord" ? "text-[var(--quiz-text)]" : "text-[var(--quiz-sakura-text)]"
+                  }`}
+                >
+                  {currentQuestion.equation}
+                </div>
+
+                <form onSubmit={handleSubmit} className="space-y-6">
+                  <Input
+                    ref={inputRef}
+                    type="tel"
+                    inputMode="numeric"
+                    value={answer}
+                    onChange={(e) => setAnswer(e.target.value)}
+                    onKeyPress={handleKeyPress}
+                    placeholder="Your answer"
+                    className={`text-2xl md:text-3xl text-center h-16 rounded-2xl border-2 font-semibold ${
+                      theme === "nord"
+                        ? "bg-[var(--quiz-background)] border-[var(--quiz-primary)] text-[var(--quiz-text)] placeholder:text-[var(--quiz-secondary)] focus:border-[var(--quiz-accent-blue)]"
+                        : "bg-[var(--quiz-sakura-background)] border-[var(--quiz-sakura-secondary)] text-[var(--quiz-sakura-text)] placeholder:text-[var(--quiz-sakura-secondary)] focus:border-[var(--quiz-sakura-accent)]"
+                    }`}
+                  />
+                  <Button
+                    type="submit"
+                    size="lg"
+                    disabled={!answer.trim() || showGameOver}
+                    className={`h-12 px-8 text-lg font-semibold transition-all duration-300 ${
+                      answer.trim() && !showGameOver
+                        ? theme === "nord"
+                          ? "bg-[var(--quiz-accent-blue)] hover:bg-[var(--quiz-accent-blue)]/90 text-[var(--quiz-background)]"
+                          : "bg-[var(--quiz-sakura-accent)] hover:bg-[var(--quiz-sakura-accent)]/90 text-white"
+                        : "bg-gray-500 text-gray-300 cursor-not-allowed"
+                    }`}
+                  >
+                    Submit Answer
+                  </Button>
+                </form>
+              </>
+            ) : (
+              // ELSE (no more questions), show the waiting message
+              <div className="flex flex-col items-center justify-center h-48">
+                <h2
+                  className={`text-3xl md:text-4xl font-bold mb-4 ${
+                    theme === "nord" ? "text-[var(--quiz-accent-yellow)]" : "text-[var(--quiz-sakura-accent)]"
+                  }`}
+                >
+                  All Questions Answered!
+                </h2>
+                <p
+                  className={`text-lg ${
+                    theme === "nord" ? "text-[var(--quiz-secondary)]" : "text-[var(--quiz-sakura-secondary)]"
+                  }`}
+                >
+                  Waiting for the timer to finish...
+                </p>
               </div>
             )}
-
-            <div
-              className={`text-5xl md:text-6xl font-bold mb-8 ${
-                theme === "nord" ? "text-[var(--quiz-text)]" : "text-[var(--quiz-sakura-text)]"
-              }`}
-            >
-              {currentQuestion.equation}
-            </div>
-
-            <form onSubmit={handleSubmit} className="space-y-6">
-              <Input
-                ref={inputRef}
-                type="tel"
-                inputMode="numeric"
-                value={answer}
-                onChange={(e) => setAnswer(e.target.value)}
-                onKeyPress={handleKeyPress}
-                placeholder="Your answer"
-                className={`text-2xl md:text-3xl text-center h-16 rounded-2xl border-2 font-semibold ${
-                  theme === "nord"
-                    ? "bg-[var(--quiz-background)] border-[var(--quiz-primary)] text-[var(--quiz-text)] placeholder:text-[var(--quiz-secondary)] focus:border-[var(--quiz-accent-blue)]"
-                    : "bg-[var(--quiz-sakura-background)] border-[var(--quiz-sakura-secondary)] text-[var(--quiz-sakura-text)] placeholder:text-[var(--quiz-sakura-secondary)] focus:border-[var(--quiz-sakura-accent)]"
-                }`}
-              />
-              <Button
-                type="submit"
-                size="lg"
-                disabled={!answer.trim() || showGameOver}
-                className={`h-12 px-8 text-lg font-semibold transition-all duration-300 ${
-                  answer.trim() && !showGameOver
-                    ? theme === "nord"
-                      ? "bg-[var(--quiz-accent-blue)] hover:bg-[var(--quiz-accent-blue)]/90 text-[var(--quiz-background)]"
-                      : "bg-[var(--quiz-sakura-accent)] hover:bg-[var(--quiz-sakura-accent)]/90 text-white"
-                    : "bg-gray-500 text-gray-300 cursor-not-allowed"
-                }`}
-              >
-                Submit Answer
-              </Button>
-            </form>
           </div>
 
           <div className="w-full max-w-2xl space-y-3">
